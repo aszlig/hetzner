@@ -145,9 +145,11 @@ class RescueSystem(object):
             'StrictHostKeyChecking': 'no',
         }
 
-        args = ' '.join(['-o %s=%s' % (k, v) for k, v in ssh_options.items()])
+        ssh_args = ' '.join(
+            ['-o %s=%s' % (k, v) for k, v in ssh_options.items()]
+        )
 
-        cmd = "ssh %s root@%s" % (args, self.server.ip)
+        cmd = "ssh %s root@%s" % (ssh_args, self.server.ip)
 
         shell = pexpect.spawn(cmd)
         shell.expect('assword:')
