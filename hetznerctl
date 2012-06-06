@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+from os.path import expanduser
+from optparse import OptionParser, make_option
+from ConfigParser import RawConfigParser, Error
+
+from hetzner import Robot
+
+class Options(object):
+    command = None
+    description = "The hetzner robot commandline interface."
+    usage = "%prog [global options] command [options]"
+
+    option_list = (
+        make_option('-c', '--config', dest='configfile', default='~/.hetznerrc',
+                    help="The location of the configuration file"
+                         " (Default: %default)."),
+        make_option('-u', '--username', dest='user',
+                    help="Username for the robot."),
+        make_option('-p', '--password', dest='passwd',
+                    help="Password for the robot."),
+    )
+
+    def __init__(self, argv=None, parent=None):
+        self.parent = parent
+        self.running = False
+        kwargs = {
+            'usage': self.usage,
+            'option_list': self.option_list,
+            'description': self.description,
+        }
+
+        if hasattr(self, 'epilog'):
+            kwargs['epilog'] = self.epilog
+
+        parser = OptionParser(**kwargs)
+
+        if self.command is None: # root parser
+            parser.disable_interspersed_args()
+            self.options, self.subargs = parser.parse_args()
+
+            self.args = None
+        else: # subcommand parser
+            self.options, args = parser.parse_args(argv)
+            self.subargs = []
+            self.args = args[1:]
+
+        self.parser = parser
+
+        self.running = True
+        self.execute()
+
+        if self.command is None:
+            # get subcommand
+            for cmd in self.subcommands:
+                if len(self.subargs) == 0:
+                    continue
+                if cmd.command == self.subargs[0]:
+                    cmd(argv, self)
+
+    def execute(self, *args):
+        pass
+
+    def close(self):
+        pass
+
+class Reboot(Options):
+    command = 'reboot'
+    description = "Reboot a server."
+    usage = "%prog ip..."
+    option_list = [
+        make_option('-m', '--method', dest='method',
+                    choices=['soft', 'hard', 'manual'], default='soft',
+                    help="The method to use for the reboot"
+                         " (Default: %default).")
+    ]
+
+    def execute(self):
+        robot = self.parent.robot
+
+        for ip in self.args:
+            server = robot.servers[ip]
+            if server:
+                server.reboot(self.options.method)
+
+class Rescue(Options):
+    command = 'rescue'
+    description = ("Reboot into rescue system, spawn a shell and"
+                   " after the shell is closed, reboot back into"
+                   " the normal system.")
+    usage = "%prog [options] ip [ip ...]"
+    option_list = [
+        make_option('-p', '--patience', dest='patience', type='int',
+                    default=300, help="The time to wait between subsequent"
+                                      " reboot tries (Default: %default)."),
+        make_option('-m', '--manual', dest='manual', action='store_true',
+                    default=False, help="If all reboot tries fail,"
+                                        " automatically send a support"
+                                        " request."),
+    ]
+
+    def execute(self):
+        robot = self.parent.robot
+
+        for ip in self.args:
+            server = robot.servers[ip]
+            if server:
+                server.rescue.shell(patience=self.options.patience,
+                                    manual=self.options.manual)
+
+class Main(Options):
+    subcommands = [
+        Reboot,
+        Rescue,
+    ]
+
+    @property
+    def epilog(self):
+        usage = "The following subcommands are available: "
+        usage += ", ".join([x.command for x in self.subcommands])
+        return usage
+
+    def execute(self):
+        if len(self.subargs) == 0:
+            self.parser.error("No command specified.")
+
+        self.configfile = expanduser(self.options.configfile)
+
+        config = RawConfigParser()
+        config.read(self.configfile)
+
+        try:
+            if not self.options.user:
+                user   = config.get('login', 'username')
+            else:
+                user   = self.options.user
+
+            if not self.options.passwd:
+                passwd = config.get('login', 'password')
+            else:
+                passwd = self.options.passwd
+        except Error:
+            self.parser.error("No config file available, specify -u and -p to"
+                              " create a new one.")
+
+        if not config.has_section('login'):
+            config.add_section('login')
+            config.set('login', 'username', user)
+            config.set('login', 'password', passwd)
+
+            config.write(open(self.configfile, 'wb'))
+
+        self.config = config
+
+        self.robot = Robot(user, passwd)
+
+    def close(self):
+        self.config.write(open(self.configfile, 'wb'))
+
+if __name__ == '__main__':
+    Main()
