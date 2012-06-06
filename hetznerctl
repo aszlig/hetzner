@@ -115,7 +115,7 @@ class ListServers(Options):
         robot = self.parent.robot
 
         for server in robot.servers:
-            print("{0} ({0})".format(server.ip, server.product))
+            print("{0} ({1})".format(server.ip, server.product))
 
 class Main(Options):
     subcommands = [
