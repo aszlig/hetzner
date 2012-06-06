@@ -8,4 +8,5 @@ setup(name = 'hetzner',
       author = 'aszlig',
       author_email = 'aszlig@redmoonstudios.org',
       scripts = ['hetznerctl'],
-      py_modules = ['hetzner'])
+      py_modules = ['hetzner'],
+      license = 'BSD')
