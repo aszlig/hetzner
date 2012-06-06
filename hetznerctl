@@ -107,10 +107,21 @@ class Rescue(Options):
                 server.rescue.shell(patience=self.options.patience,
                                     manual=self.options.manual)
 
+class ListServers(Options):
+    command = 'list'
+    description = "List all servers."
+
+    def execute(self):
+        robot = self.parent.robot
+
+        for server in robot.servers:
+            print("{0} ({0})".format(server.ip, server.product))
+
 class Main(Options):
     subcommands = [
         Reboot,
         Rescue,
+        ListServers,
     ]
 
     @property
