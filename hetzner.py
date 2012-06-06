@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import partial
 from base64 import b64encode
 from urllib import urlencode
-from httplib import HTTPSConnection
+from httplib import HTTPSConnection, BadStatusLine
 
 import pexpect
 
@@ -22,6 +22,20 @@ class RobotConnection(object):
         self.passwd = passwd
         self.conn = HTTPSConnection(ROBOT_HOST)
 
+    def _request(self, method, path, data, headers, retry=1):
+        self.conn.request(method.upper(), path, data, headers)
+        try:
+            return self.conn.getresponse()
+        except BadStatusLine:
+            # XXX: Sometimes, the API server seems to have a problem with
+            # keepalives.
+            if retry <= 0:
+                raise
+
+            self.conn.close()
+            self.conn.connect()
+            return self._request(method, path, data, headers, retry - 1)
+
     def request(self, method, path, data=None):
         if data is not None:
             data = urlencode(data)
@@ -35,9 +49,9 @@ class RobotConnection(object):
         if data is not None:
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-        self.conn.request(method.upper(), path, data, headers)
-        response = self.conn.getresponse()
+        response = self._request(method, path, data, headers)
         data = json.loads(response.read())
+
         if 200 <= response.status < 300:
             return data
         else:
