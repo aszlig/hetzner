@@ -21,7 +21,6 @@ class RobotConnection(object):
         self.user = user
         self.passwd = passwd
         self.conn = HTTPSConnection(ROBOT_HOST)
-        self.conn.debuglevel = 9
 
     def request(self, method, path, data=None):
         if data is not None:
