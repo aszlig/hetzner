@@ -60,11 +60,11 @@ class RobotConnection(object):
                 raise RobotError("Unknown error: {0}".format(data))
             else:
                 err = "{0} - {1}".format(error['status'], error['message'])
-                if error['missing'] is not None:
+                if error.has_key('missing'):
                     err += ", missing input: {0}".format(
                         ', '.join(error['missing'])
                     )
-                if error['invalid'] is not None:
+                if error.has_key('invalid'):
                     err += ", invalid input: {0}".format(
                         ', '.join(error['invalid'])
                     )
