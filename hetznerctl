@@ -96,6 +96,9 @@ class Rescue(Options):
                     default=False, help="If all reboot tries fail,"
                                         " automatically send a support"
                                         " request."),
+        make_option('-n', '--noshell', dest='noshell', action='store_true',
+                    default=False, help="Don't drop into a shell, only print"
+                                        " rescue password."),
     ]
 
     def execute(self):
@@ -103,9 +106,20 @@ class Rescue(Options):
 
         for ip in self.args:
             server = robot.servers[ip]
-            if server:
-                server.rescue.shell(patience=self.options.patience,
-                                    manual=self.options.manual)
+            if not server:
+                continue
+
+            kwargs = {
+                'patience': self.options.patience,
+                'manual': self.options.manual,
+            }
+
+            if self.options.noshell:
+                server.rescue.observed_activate(**kwargs)
+                print("Password for {0}: {1}".format(server.ip,
+                                                     server.rescue.password))
+            else:
+                server.rescue.shell(**kwargs)
 
 class ListServers(Options):
     command = 'list'
