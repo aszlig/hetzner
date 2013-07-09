@@ -3,7 +3,7 @@ from os.path import expanduser
 from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error
 
-from hetzner import Robot
+from hetzner.robot import Robot
 
 
 class Options(object):
