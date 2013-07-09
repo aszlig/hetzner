@@ -127,6 +127,7 @@ class RescueSystem(object):
                 'GlobalKnownHostsFile=/dev/null',
                 'UserKnownHostsFile=/dev/null',
                 'StrictHostKeyChecking=no',
+                'LogLevel=quiet',
             ]
             ssh_args = reduce(lambda acc, opt: acc + ['-o', opt],
                               ssh_options, [])
