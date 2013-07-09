@@ -85,12 +85,9 @@ class ServerManager(object):
     def __init__(self, conn):
         self.conn = conn
 
-    def __getitem__(self, ip):
+    def get(self, ip):
         """
         Get server by providing its main IP address.
-
-        For example:
-        robot.servers['1.2.3.4']
         """
         return Server(self.conn, self.conn.get('/server/{0}'.format(ip)))
 
