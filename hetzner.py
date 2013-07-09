@@ -1,14 +1,15 @@
+import os
 import time
 import json
 import socket
+import subprocess
 
+from tempfile import mkdtemp
 from datetime import datetime
 from functools import partial
 from base64 import b64encode
 from urllib import urlencode
 from httplib import HTTPSConnection, BadStatusLine
-
-import pexpect
 
 ROBOT_HOST = "robot-ws.your-server.de"
 
@@ -23,6 +24,33 @@ class ManualReboot(Exception):
 
 class ConnectError(Exception):
     pass
+
+
+class SSHAskPassHelper(object):
+    """
+    This creates a temporary SSH askpass helper script, which just passes the
+    provided password.
+    """
+    def __init__(self, passwd):
+        self.passwd = passwd
+        self.tempdir = None
+        self.script = None
+
+    def __enter__(self):
+        self.tempdir = mkdtemp()
+        script = os.path.join(self.tempdir, "askpass")
+        fd = os.open(script, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0700)
+        self.script = script
+        esc_passwd = self.passwd.replace("'", r"'\''")
+        os.write(fd, "#!/bin/sh\necho -n '{0}'".format(esc_passwd))
+        os.close(fd)
+        return script
+
+    def __exit__(self, type, value, traceback):
+        if self.script is not None:
+            os.unlink(self.script)
+        if self.tempdir is not None:
+            os.rmdir(self.tempdir)
 
 
 class RobotConnection(object):
@@ -164,24 +192,20 @@ class RescueSystem(object):
         """
         self.observed_activate(*args, **kwargs)
 
-        ssh_options = {
-            'CheckHostIP': 'no',
-            'GlobalKnownHostsFile': '/dev/null',
-            'UserKnownHostsFile': '/dev/null',
-            'StrictHostKeyChecking': 'no',
-        }
-
-        ssh_args = ' '.join(
-            ['-o %s=%s' % (k, v) for k, v in ssh_options.items()]
-        )
-
-        cmd = "ssh %s root@%s" % (ssh_args, self.server.ip)
-
-        shell = pexpect.spawn(cmd)
-        shell.expect('assword:')
-        shell.sendline(self.password)
-
-        shell.interact()
+        with SSHAskPassHelper(self.password) as askpass:
+            ssh_options = [
+                'CheckHostIP=no',
+                'GlobalKnownHostsFile=/dev/null',
+                'UserKnownHostsFile=/dev/null',
+                'StrictHostKeyChecking=no',
+            ]
+            ssh_args = reduce(lambda acc, opt: acc + ['-o', opt],
+                              ssh_options, [])
+            cmd = ['ssh'] + ssh_args + ["root@{0}".format(self.server.ip)]
+            env = dict(os.environ)
+            env['DISPLAY'] = ":666"
+            env['SSH_ASKPASS'] = askpass
+            subprocess.check_call(cmd, env=env, preexec_fn=os.setsid)
 
         self.observed_deactivate(*args, **kwargs)
 

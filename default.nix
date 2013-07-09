@@ -6,5 +6,4 @@ pythonPackages.buildPythonPackage rec {
   src = ./.;
   doCheck = false;
   installCommand = "python setup.py install --prefix=$out";
-  pythonPath = [ pythonPackages.pexpect ];
 }
