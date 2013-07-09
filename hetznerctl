@@ -5,13 +5,15 @@ from ConfigParser import RawConfigParser, Error
 
 from hetzner import Robot
 
+
 class Options(object):
     command = None
     description = "The hetzner robot commandline interface."
     usage = "%prog [global options] command [options]"
 
     option_list = (
-        make_option('-c', '--config', dest='configfile', default='~/.hetznerrc',
+        make_option('-c', '--config', dest='configfile',
+                    default='~/.hetznerrc',
                     help="The location of the configuration file"
                          " (Default: %default)."),
         make_option('-u', '--username', dest='user',
@@ -34,12 +36,12 @@ class Options(object):
 
         parser = OptionParser(**kwargs)
 
-        if self.command is None: # root parser
+        if self.command is None:  # root parser
             parser.disable_interspersed_args()
             self.options, self.subargs = parser.parse_args()
 
             self.args = None
-        else: # subcommand parser
+        else:  # subcommand parser
             self.options, args = parser.parse_args(argv)
             self.subargs = []
             self.args = args[1:]
@@ -63,6 +65,7 @@ class Options(object):
     def close(self):
         pass
 
+
 class Reboot(Options):
     command = 'reboot'
     description = "Reboot a server."
@@ -81,6 +84,7 @@ class Reboot(Options):
             server = robot.servers[ip]
             if server:
                 server.reboot(self.options.method)
+
 
 class Rescue(Options):
     command = 'rescue'
@@ -121,6 +125,7 @@ class Rescue(Options):
             else:
                 server.rescue.shell(**kwargs)
 
+
 class ListServers(Options):
     command = 'list'
     description = "List all servers."
@@ -130,6 +135,7 @@ class ListServers(Options):
 
         for server in robot.servers:
             print("{0} ({1})".format(server.ip, server.product))
+
 
 class Main(Options):
     subcommands = [
@@ -155,9 +161,9 @@ class Main(Options):
 
         try:
             if not self.options.user:
-                user   = config.get('login', 'username')
+                user = config.get('login', 'username')
             else:
-                user   = self.options.user
+                user = self.options.user
 
             if not self.options.passwd:
                 passwd = config.get('login', 'password')

@@ -12,9 +12,18 @@ import pexpect
 
 ROBOT_HOST = "robot-ws.your-server.de"
 
-class RobotError(Exception): pass
-class ManualReboot(Exception): pass
-class ConnectError(Exception): pass
+
+class RobotError(Exception):
+    pass
+
+
+class ManualReboot(Exception):
+    pass
+
+
+class ConnectError(Exception):
+    pass
+
 
 class RobotConnection(object):
     def __init__(self, user, passwd):
@@ -60,11 +69,11 @@ class RobotConnection(object):
                 raise RobotError("Unknown error: {0}".format(data))
             else:
                 err = "{0} - {1}".format(error['status'], error['message'])
-                if error.has_key('missing'):
+                if 'missing' in error:
                     err += ", missing input: {0}".format(
                         ', '.join(error['missing'])
                     )
-                if error.has_key('invalid'):
+                if 'invalid' in error:
                     err += ", invalid input: {0}".format(
                         ', '.join(error['invalid'])
                     )
@@ -74,6 +83,7 @@ class RobotConnection(object):
     post = lambda s, p, d: s.request('POST', p, d)
     put = lambda s, p, d: s.request('PUT', p, d)
     delete = lambda s, p, d: s.request('DELETE', p, d)
+
 
 class RescueSystem(object):
     def __init__(self, server):
@@ -91,13 +101,15 @@ class RescueSystem(object):
 
     @property
     def active(self):
-        if self._active is not None: return self._active
+        if self._active is not None:
+            return self._active
         self._fetch_status()
         return self._active
 
     @property
     def password(self):
-        if self._password is not None: return self._password
+        if self._password is not None:
+            return self._password
         self._fetch_status()
         return self._password
 
@@ -173,6 +185,7 @@ class RescueSystem(object):
 
         self.observed_deactivate(*args, **kwargs)
 
+
 class Server(object):
     def __init__(self, conn, result):
         self.conn = conn
@@ -193,8 +206,8 @@ class Server(object):
 
     def check_ssh(self, port=22, timeout=5):
         """
-        Check if the current server has an open SSH port. Return True if port is
-        reachable, otherwise false. Time out after 'timeout' seconds.
+        Check if the current server has an open SSH port. Return True if port
+        is reachable, otherwise false. Time out after 'timeout' seconds.
         """
         success = True
         old_timeout = socket.getdefaulttimeout()
@@ -210,18 +223,21 @@ class Server(object):
         socket.setdefaulttimeout(old_timeout)
         return success
 
-    def observed_reboot(self, patience=300, tries=['soft', 'hard'], manual=False):
+    def observed_reboot(self, patience=300, tries=None, manual=False):
         """
         Reboot and wait patience seconds until the system comes back.
         If not, retry with the next step in tries and wait another patience
         seconds. Repeat until there are no more tries left.
 
-        If manual is true, do a manual reboot in case the server doesn't come up
-        again. Raises a ManualReboot exception if that is the case.
+        If manual is true, do a manual reboot in case the server doesn't come
+        up again. Raises a ManualReboot exception if that is the case.
 
         Return True on success and False if the system didn't come up.
         """
         is_down = False
+
+        if tries is None:
+            tries = ['soft', 'hard']
 
         for mode in tries:
             self.reboot(mode)
@@ -264,6 +280,7 @@ class Server(object):
     def __repr__(self):
         return "<{0} ({1})>".format(self.ip, self.product)
 
+
 class ServerManager(object):
     def __init__(self, conn):
         self.conn = conn
@@ -279,6 +296,7 @@ class ServerManager(object):
 
     def __iter__(self):
         return iter([Server(self.conn, s) for s in self.conn.get('/server')])
+
 
 class Robot(object):
     def __init__(self, user, passwd):
