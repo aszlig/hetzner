@@ -143,6 +143,17 @@ class RescueSystem(object):
 class Server(object):
     def __init__(self, conn, result):
         self.conn = conn
+        self.update_info(result)
+        self.rescue = RescueSystem(self)
+
+    def update_info(self, result=None):
+        """
+        Updates the information of the current Server instance either by
+        sending a new GET request or by parsing the response given by result.
+        """
+        if result is None:
+            result = self.conn.get('/server/{0}'.format(self.ip))
+
         data = result['server']
 
         self.ip = data['server_ip']
@@ -156,7 +167,10 @@ class Server(object):
         self.cancelled = data['cancelled']
         self.paid_until = datetime.strptime(data['paid_until'], '%Y-%m-%d')
 
-        self.rescue = RescueSystem(self)
+    def set_name(self, name):
+        result = self.conn.post('/server/{0}'.format(self.ip),
+                                {'server_name': name})
+        self.update_info(result)
 
     def check_ssh(self, port=22, timeout=5):
         """
