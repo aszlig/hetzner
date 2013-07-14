@@ -65,14 +65,15 @@ class RobotConnection(object):
                 raise RobotError("Unknown error: {0}".format(data))
             else:
                 err = "{0} - {1}".format(error['status'], error['message'])
-                if 'missing' in error:
-                    err += ", missing input: {0}".format(
-                        ', '.join(error['missing'])
-                    )
-                if 'invalid' in error:
-                    err += ", invalid input: {0}".format(
-                        ', '.join(error['invalid'])
-                    )
+                missing = error.get('missing', [])
+                invalid = error.get('invalid', [])
+                fields = []
+                if missing is not None:
+                    fields += missing
+                if invalid is not None:
+                    fields += invalid
+                if len(fields) > 0:
+                    err += ", fields: {0}".format(', '.join(fields))
                 raise RobotError(err)
 
     get = lambda s, p: s.request('GET', p)
