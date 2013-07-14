@@ -134,7 +134,17 @@ class ListServers(Options):
         robot = self.parent.robot
 
         for server in robot.servers:
-            print("{0} ({1})".format(server.ip, server.product))
+            info = {
+                'model': server.product
+            }
+
+            if server.name != "":
+                info['name'] = server.name
+
+            infolist = ["{0}: {1}".format(key, val)
+                        for key, val in info.iteritems()]
+
+            print("{0} ({1})".format(server.ip, ", ".join(infolist)))
 
 
 class Main(Options):
