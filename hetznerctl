@@ -126,6 +126,23 @@ class Rescue(Options):
                 server.rescue.shell(**kwargs)
 
 
+class SetName(Options):
+    command = "set-name"
+    description = "Change the name of a server"
+    usage = "%prog ip name"
+
+    def execute(self):
+        robot = self.parent.robot
+
+        if len(self.args) < 2:
+            self.parser.error("Too few arguments.")
+        elif len(self.args) > 2:
+            self.parser.error("Too many arguments.")
+
+        ip, name = self.args
+        robot.servers.get(ip).set_name(name)
+
+
 class ListServers(Options):
     command = 'list'
     description = "List all servers."
@@ -151,6 +168,7 @@ class Main(Options):
     subcommands = [
         Reboot,
         Rescue,
+        SetName,
         ListServers,
     ]
 
