@@ -55,7 +55,15 @@ class RobotConnection(object):
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         response = self._request(method, path, data, headers)
-        data = json.loads(response.read())
+        raw_data = response.read()
+        if len(raw_data) == 0:
+            msg = "Empty resonse, status {0}."
+            raise RobotError(msg.format(response.status))
+        try:
+            data = json.loads(raw_data)
+        except ValueError:
+            msg = "Response is not JSON (status {0}): {1}"
+            raise RobotError(msg.format(response.status, repr(raw_data)))
 
         if 200 <= response.status < 300:
             return data
