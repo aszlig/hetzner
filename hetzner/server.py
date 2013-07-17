@@ -173,7 +173,7 @@ class AdminAccount(object):
 
     def _genpasswd(self):
         random.seed(os.urandom(512))
-        chars = string.letters + string.digits + "/()-=+_,:;.^~#*@"
+        chars = string.letters + string.digits + "/()-=+_,;.^~#*@"
         length = random.randint(20, 40)
         return ''.join(random.choice(chars) for i in range(length))
 
