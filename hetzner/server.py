@@ -1,6 +1,9 @@
 import os
+import re
 import time
+import random
 import socket
+import string
 import subprocess
 
 from tempfile import mkdtemp
@@ -140,11 +143,93 @@ class RescueSystem(object):
         self.observed_deactivate(*args, **kwargs)
 
 
+class AdminAccount(object):
+    def __init__(self, server):
+        # XXX: This is preliminary, because we don't have such functionality in
+        #      the official API yet.
+        self._scraper = server.conn.scraper
+        self._serverid = self._scraper.get_serverid(server.ip)
+        self.exists = False
+        self.login = None
+        self.passwd = None
+        self.update_info()
+
+    def update_info(self):
+        """
+        Get information about currently active admin login.
+        """
+        login_re = re.compile(r'"label_req">Login.*?"element">([^<]+)',
+                              re.DOTALL)
+
+        path = '/server/admin/id/{0}'.format(self._serverid)
+        response = self._scraper.request(path)
+        assert response.status == 200
+        match = login_re.search(response.read())
+        if match is None:
+            self.exists = False
+        else:
+            self.exists = True
+            self.login = match.group(1)
+
+    def _genpasswd(self):
+        random.seed(os.urandom(512))
+        chars = string.letters + string.digits + "/()-=+_,:;.^~#*@"
+        length = random.randint(20, 40)
+        return ''.join(random.choice(chars) for i in range(length))
+
+    def create(self, passwd=None):
+        """
+        Create a new admin account if missing. If passwd is supplied, use it
+        instead of generating a random one.
+        """
+        if not self.exists:
+            path = '/server/adminCreate/id/{0}'.format(self._serverid)
+            self._scraper.request(path)
+            self.update_info()
+        if passwd is None:
+            passwd = self._genpasswd()
+        data = {
+            'password[new_password]': passwd,
+            'password[new_password_repeat]': passwd,
+            'id': self._serverid
+        }
+        response = self._scraper.request('/server/adminUpdate', data)
+        assert "msgbox_success" in response.read()
+        self.passwd = passwd
+        return self.login, self.passwd
+
+    def delete(self):
+        """
+        Remove the admin account.
+        """
+        if not self.exists:
+            return
+        path = '/server/adminDelete/id/{0}'.format(self._serverid)
+        assert "msgbox_success" in self._scraper.request(path).read()
+        self.update_info()
+
+    def __repr__(self):
+        if self.exists:
+            return "<AdminAccount login: {0}>".format(self.login)
+        else:
+            return "<AdminAccount missing>"
+
+
 class Server(object):
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
         self.rescue = RescueSystem(self)
+        self._admin_account = None
+
+    @property
+    def admin(self):
+        """
+        Update, create and delete admin accounts.
+        """
+        if self._admin_account is None:
+            self._admin_account = AdminAccount(self)
+        return self._admin_account
 
     def update_info(self, result=None):
         """
