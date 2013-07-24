@@ -262,12 +262,61 @@ class IpManager(object):
         return iter([IpAddress(self.conn, ip) for ip in result])
 
 
+class Subnet(object):
+    def __init__(self, conn, result):
+        self.conn = conn
+        self.update_info(result)
+
+    def update_info(self, result=None):
+        """
+        Update the information of the subnet. If result is omitted, a new
+        request is sent to the robot to gather the information.
+        """
+        if result is None:
+            result = self.conn.get('/ip/{0}'.format(self.net_ip))
+
+        data = result['subnet']
+
+        self.net_ip = data['ip']
+        self.mask = data['mask']
+        self.gateway = data['gateway']
+        self.server_ip = data['server_ip']
+        self.failover = data['failover']
+        self.locked = data['locked']
+        self.traffic_warnings = data['traffic_warnings']
+        self.traffic_hourly = data['traffic_hourly']
+        self.traffic_daily = data['traffic_daily']
+        self.traffic_monthly = data['traffic_monthly']
+
+    def __repr__(self):
+        return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
+                                                       self.gateway)
+
+
+class SubnetManager(object):
+    def __init__(self, conn, main_ip):
+        self.conn = conn
+        self.main_ip = main_ip
+
+    def get(self, net_ip):
+        """
+        Get a specific IPv6 subnet of a server.
+        """
+        return Subnet(self.conn, self.conn.get('/subnet/{0}'.format(net_ip)))
+
+    def __iter__(self):
+        data = urlencode({'server_ip': self.main_ip})
+        result = self.conn.get('/subnet?{0}'.format(data))
+        return iter([Subnet(self.conn, net) for net in result])
+
+
 class Server(object):
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
         self.rescue = RescueSystem(self)
         self.ips = IpManager(self.conn, self.ip)
+        self.subnets = SubnetManager(self.conn, self.ip)
         self._admin_account = None
 
     @property
