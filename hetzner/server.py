@@ -8,6 +8,7 @@ import subprocess
 
 from tempfile import mkdtemp
 from datetime import datetime
+from urllib import urlencode
 
 
 class ManualReboot(Exception):
@@ -215,11 +216,58 @@ class AdminAccount(object):
             return "<AdminAccount missing>"
 
 
+class IpAddress(object):
+    def __init__(self, conn, result):
+        self.conn = conn
+        self.update_info(result)
+
+    def update_info(self, result=None):
+        """
+        Update the information of the current IP address and all related
+        information such as traffic warnings. If result is omitted, a new
+        request is sent to the robot to gather the information.
+        """
+        if result is None:
+            result = self.conn.get('/ip/{0}'.format(self.ip))
+
+        data = result['ip']
+
+        self.ip = data['ip']
+        self.server_ip = data['server_ip']
+        self.locked = data['locked']
+        self.separate_mac = data['separate_mac']
+        self.traffic_warnings = data['traffic_warnings']
+        self.traffic_hourly = data['traffic_hourly']
+        self.traffic_daily = data['traffic_daily']
+        self.traffic_monthly = data['traffic_monthly']
+
+    def __repr__(self):
+        return "<IpAddress {0}>".format(self.ip)
+
+
+class IpManager(object):
+    def __init__(self, conn, main_ip):
+        self.conn = conn
+        self.main_ip = main_ip
+
+    def get(self, ip):
+        """
+        Get a specific IP address of a server.
+        """
+        return IpAddress(self.conn, self.conn.get('/ip/{0}'.format(ip)))
+
+    def __iter__(self):
+        data = urlencode({'server_ip': self.main_ip})
+        result = self.conn.get('/ip?{0}'.format(data))
+        return iter([IpAddress(self.conn, ip) for ip in result])
+
+
 class Server(object):
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
         self.rescue = RescueSystem(self)
+        self.ips = IpManager(self.conn, self.ip)
         self._admin_account = None
 
     @property
