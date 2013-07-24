@@ -175,6 +175,9 @@ class ShowServer(Options):
         for ip in self.args:
             self.print_serverinfo(robot.servers.get(ip))
 
+    def print_line(self, key, val):
+        print("{0:<15}{1}".format(key + ":", val))
+
     def print_serverinfo(self, server):
         info = [
             ("Main IP", server.ip),
@@ -190,7 +193,15 @@ class ShowServer(Options):
         ]
 
         for key, val in info:
-            print("{0:<15}{1}".format(key + ":", val))
+            self.print_line(key, val)
+
+        for ip in server.ips:
+            self.print_line("IPv4 address", ip.ip)
+
+        for net in server.subnets:
+            self.print_line("IPv6 network", "{0}/{1}".format(net.net_ip,
+                                                             net.mask))
+            self.print_line("IPv6 gateway", net.gateway)
 
 class Main(Options):
     subcommands = [
