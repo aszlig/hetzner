@@ -164,12 +164,41 @@ class ListServers(Options):
             print("{0} ({1})".format(server.ip, ", ".join(infolist)))
 
 
+class ShowServer(Options):
+    command = 'show'
+    description = "Show details about a server."
+    usage = "%prog ip..."
+
+    def execute(self):
+        robot = self.parent.robot
+
+        for ip in self.args:
+            self.print_serverinfo(robot.servers.get(ip))
+
+    def print_serverinfo(self, server):
+        info = [
+            ("Main IP", server.ip),
+            ("Name", server.name),
+            ("Product", server.product),
+            ("Data center", server.datacenter),
+            ("Traffic", server.traffic),
+            ("Flatrate", server.flatrate),
+            ("Status", server.status),
+            ("Throttled", server.throttled),
+            ("Cancelled", server.cancelled),
+            ("Paid until", server.paid_until),
+        ]
+
+        for key, val in info:
+            print("{0:<15}{1}".format(key + ":", val))
+
 class Main(Options):
     subcommands = [
         Reboot,
         Rescue,
         SetName,
         ListServers,
+        ShowServer,
     ]
 
     @property
