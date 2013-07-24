@@ -196,12 +196,12 @@ class ShowServer(Options):
             self.print_line(key, val)
 
         for ip in server.ips:
-            self.print_line("IPv4 address", ip.ip)
+            self.print_line("IP address", ip.ip)
 
         for net in server.subnets:
-            self.print_line("IPv6 network", "{0}/{1}".format(net.net_ip,
+            self.print_line("Subnet", "{0}/{1}".format(net.net_ip,
                                                              net.mask))
-            self.print_line("IPv6 gateway", net.gateway)
+            self.print_line("Gateway", net.gateway)
 
 class Main(Options):
     subcommands = [

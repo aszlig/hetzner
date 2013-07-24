@@ -300,7 +300,7 @@ class SubnetManager(object):
 
     def get(self, net_ip):
         """
-        Get a specific IPv6 subnet of a server.
+        Get a specific subnet of a server.
         """
         return Subnet(self.conn, self.conn.get('/subnet/{0}'.format(net_ip)))
 
