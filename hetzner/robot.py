@@ -8,26 +8,11 @@ from urllib import urlencode
 from httplib import HTTPSConnection, BadStatusLine, ResponseNotReady
 from tempfile import NamedTemporaryFile
 
+from hetzner import WebRobotError, RobotError
 from hetzner.server import Server
 
 ROBOT_HOST = "robot-ws.your-server.de"
 ROBOT_WEBHOST = "robot.your-server.de"
-
-
-class RobotError(Exception):
-    pass
-
-
-class ManualReboot(Exception):
-    pass
-
-
-class ConnectError(Exception):
-    pass
-
-
-class WebRobotError(RobotError):
-    pass
 
 
 class ValidatedHTTPSConnection(HTTPSConnection):
@@ -235,7 +220,7 @@ class RobotConnection(object):
         raw_data = response.read()
         if len(raw_data) == 0:
             msg = "Empty resonse, status {0}."
-            raise RobotError(msg.format(response.status))
+            raise RobotError(msg.format(response.status), response.status)
         try:
             data = json.loads(raw_data)
         except ValueError:
@@ -247,7 +232,8 @@ class RobotConnection(object):
         else:
             error = data.get('error', None)
             if error is None:
-                raise RobotError("Unknown error: {0}".format(data))
+                raise RobotError("Unknown error: {0}".format(data),
+                                 response.status)
             else:
                 err = "{0} - {1}".format(error['status'], error['message'])
                 missing = error.get('missing', [])
@@ -259,7 +245,7 @@ class RobotConnection(object):
                     fields += invalid
                 if len(fields) > 0:
                     err += ", fields: {0}".format(', '.join(fields))
-                raise RobotError(err)
+                raise RobotError(err, response.status)
 
     get = lambda s, p: s.request('GET', p)
     post = lambda s, p, d: s.request('POST', p, d)

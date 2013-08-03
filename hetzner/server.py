@@ -10,14 +10,7 @@ from tempfile import mkdtemp
 from datetime import datetime
 from urllib import urlencode
 
-
-class ManualReboot(Exception):
-    pass
-
-
-class ConnectError(Exception):
-    pass
-
+from hetzner import RobotError, ManualReboot, ConnectError
 
 class SSHAskPassHelper(object):
     """
