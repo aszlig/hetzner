@@ -299,7 +299,13 @@ class SubnetManager(object):
 
     def __iter__(self):
         data = urlencode({'server_ip': self.main_ip})
-        result = self.conn.get('/subnet?{0}'.format(data))
+        try:
+            result = self.conn.get('/subnet?{0}'.format(data))
+        except RobotError as err:
+            # If there are no subnets a 404 is returned rather than just an
+            # empty list.
+            if err.status == 404:
+                result = []
         return iter([Subnet(self.conn, net) for net in result])
 
 
