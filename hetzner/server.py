@@ -429,4 +429,4 @@ class Server(object):
         return self.conn.post('/reset/{0}'.format(self.ip), {'type': modekey})
 
     def __repr__(self):
-        return "<{0} ({1})>".format(self.ip, self.product)
+        return "<{0} (#{1} {2})>".format(self.ip, self.number, self.product)

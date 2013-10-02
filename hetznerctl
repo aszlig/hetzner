@@ -152,6 +152,7 @@ class ListServers(Options):
 
         for server in robot.servers:
             info = {
+                'id': server.number,
                 'model': server.product
             }
 
@@ -180,6 +181,7 @@ class ShowServer(Options):
 
     def print_serverinfo(self, server):
         info = [
+            ("Number", server.number),
             ("Main IP", server.ip),
             ("Name", server.name),
             ("Product", server.product),
