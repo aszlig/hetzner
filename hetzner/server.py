@@ -142,7 +142,7 @@ class AdminAccount(object):
         # XXX: This is preliminary, because we don't have such functionality in
         #      the official API yet.
         self._scraper = server.conn.scraper
-        self._serverid = self._scraper.get_serverid(server.ip)
+        self._serverid = server.number
         self.exists = False
         self.login = None
         self.passwd = None
@@ -152,6 +152,7 @@ class AdminAccount(object):
         """
         Get information about currently active admin login.
         """
+        self._scraper.login()
         login_re = re.compile(r'"label_req">Login.*?"element">([^<]+)',
                               re.DOTALL)
 
@@ -338,6 +339,7 @@ class Server(object):
         data = result['server']
 
         self.ip = data['server_ip']
+        self.number = data['server_number']
         self.name = data['server_name']
         self.product = data['product']
         self.datacenter = data['dc']

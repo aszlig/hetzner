@@ -128,19 +128,6 @@ class RobotWebInterface(object):
 
         self.logged_in = True
 
-    def get_serverid(self, ip):
-        """
-        Retrieve and return server ID for the main IP address supplied by 'ip'.
-        """
-        self.login()
-        serverid_re = re.compile(r'value="(\d+)"[^#]*#\1 \((.*?)\)')
-        data = self.request('/support/server', {}).read()
-        idstr = dict(map(reversed, serverid_re.findall(data))).get(str(ip))
-        if idstr is None:
-            raise WebRobotError("Server ID for IP address {0} not"
-                                " found.".format(ip))
-        return int(idstr)
-
     def request(self, path, data=None, xhr=True):
         """
         Send a request to the web interface, using 'data' for urlencoded POST
