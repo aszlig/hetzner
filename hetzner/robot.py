@@ -128,7 +128,7 @@ class RobotWebInterface(object):
 
         self.logged_in = True
 
-    def request(self, path, data=None, xhr=True):
+    def request(self, path, data=None, xhr=True, method=None):
         """
         Send a request to the web interface, using 'data' for urlencoded POST
         data. If 'data' is None (which it is by default), a GET request is sent
@@ -146,10 +146,12 @@ class RobotWebInterface(object):
             headers['X-Requested-With'] = 'XMLHttpRequest'
 
         if data is None:
-            method = 'GET'
+            if method is None:
+                method = 'GET'
             encoded = None
         else:
-            method = 'POST'
+            if method is None:
+                method = 'POST'
             encoded = urlencode(data)
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
