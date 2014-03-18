@@ -12,6 +12,7 @@ from urllib import urlencode
 
 from hetzner import RobotError, ManualReboot, ConnectError
 
+
 class SSHAskPassHelper(object):
     """
     This creates a temporary SSH askpass helper script, which just passes the
@@ -284,7 +285,7 @@ class Subnet(object):
 
     def __repr__(self):
         return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
-                                                       self.gateway)
+                                                        self.gateway)
 
 
 class SubnetManager(object):
