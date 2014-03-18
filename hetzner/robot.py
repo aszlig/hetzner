@@ -87,16 +87,16 @@ class RobotWebInterface(object):
         if self.conn is None:
             self.conn = ValidatedHTTPSConnection(ROBOT_WEBHOST)
 
-    def login(self, user=None, passwd=None):
+    def login(self, user=None, passwd=None, force=False):
         """
         Log into the robot web interface using self.user and self.passwd. If
         user/passwd is provided as arguments, those are used instead and
         self.user/self.passwd are updated accordingly.
         """
-        if self.logged_in:
+        if self.logged_in and not force:
             return
 
-        self.connect()
+        self.connect(force=force)
 
         # Update self.user and self.passwd in case we need to re-establish the
         # connection.
