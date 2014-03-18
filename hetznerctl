@@ -36,28 +36,33 @@ class Options(object):
 
         parser = OptionParser(**kwargs)
 
-        if self.command is None:  # root parser
+        if self.command is None:
+            # root parser
             parser.disable_interspersed_args()
             self.options, self.subargs = parser.parse_args()
-
             self.args = None
-        else:  # subcommand parser
+        else:
+            # subcommand parser
             self.options, args = parser.parse_args(argv)
             self.subargs = []
             self.args = args[1:]
 
         self.parser = parser
-
         self.running = True
         self.execute()
 
         if self.command is None:
-            # get subcommand
-            for cmd in self.subcommands:
-                if len(self.subargs) == 0:
-                    continue
-                if cmd.command == self.subargs[0]:
-                    cmd(argv, self)
+            # the subcommand is the first arg of the current node
+            if len(self.subargs) == 0:
+                parser.error("No command specified.")
+
+            cmd = self.subargs[0]
+            matches = filter(lambda c: c.command == cmd, self.subcommands)
+
+            if len(matches) == 0:
+                parser.error("Command {0} not found.".format(cmd))
+
+            map(lambda x: x(argv, self), matches)
 
     def execute(self, *args):
         pass
@@ -221,9 +226,6 @@ class Main(Options):
         return usage
 
     def execute(self):
-        if len(self.subargs) == 0:
-            self.parser.error("No command specified.")
-
         self.configfile = expanduser(self.options.configfile)
 
         config = RawConfigParser()
