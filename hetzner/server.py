@@ -349,6 +349,7 @@ class Server(object):
         self.throttled = data['throttled']
         self.cancelled = data['cancelled']
         self.paid_until = datetime.strptime(data['paid_until'], '%Y-%m-%d')
+        self.is_vserver = self.product.startswith('VQ')
 
     def set_name(self, name):
         result = self.conn.post('/server/{0}'.format(self.ip),
