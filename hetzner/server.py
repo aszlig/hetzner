@@ -389,7 +389,10 @@ class Server(object):
         is_down = False
 
         if tries is None:
-            tries = ['soft', 'hard']
+            if self.is_vserver:
+                tries = ['hard']
+            else:
+                tries = ['soft', 'hard']
 
         for mode in tries:
             self.reboot(mode)
@@ -419,7 +422,21 @@ class Server(object):
         Del, "hard" for triggering a hardware reset and "manual" for requesting
         a poor devil from the data center to go to your server and press the
         power button.
+
+        On a vServer, rebooting with mode="soft" is a no-op, any other value
+        results in a hard reset.
         """
+        if self.is_vserver:
+            if mode == 'soft':
+                return
+
+            self.conn.scraper.login(force=True)
+            baseurl = '/server/vserverCommand/id/{0}/command/reset'
+            url = baseurl.format(self.number)
+            response = self.conn.scraper.request(url, method='POST')
+            assert "msgbox_success" in response.read()
+            return response
+
         modes = {
             'manual': 'man',
             'hard': 'hw',
