@@ -207,8 +207,9 @@ class ShowServer(Options):
 
         for net in server.subnets:
             self.print_line("Subnet", "{0}/{1}".format(net.net_ip,
-                                                             net.mask))
+                                                       net.mask))
             self.print_line("Gateway", net.gateway)
+
 
 class Main(Options):
     subcommands = [
