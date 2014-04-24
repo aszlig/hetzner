@@ -3,7 +3,7 @@ class RobotError(Exception):
         self.message = message
         self.status = status
 
-    def __repr__(self):
+    def __str__(self):
         if self.status is None:
             return self.message
         else:
