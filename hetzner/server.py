@@ -211,10 +211,42 @@ class AdminAccount(object):
             return "<AdminAccount missing>"
 
 
+class ReverseDNS(object):
+    def __init__(self, conn, ip):
+        self.conn = conn
+        self.ip = ip
+        self.update_info()
+
+    def update_info(self):
+        try:
+            result = self.conn.get('/rdns/{0}'.format(self.ip))
+        except RobotError as err:
+            if err.status == 404:
+                result = None
+
+        if result is not None:
+            data = result['rdns']
+            self.ptr = data['ptr']
+        else:
+            self.ptr = None
+
+    def __repr__(self):
+        return "<ReverseDNS PTR: {0}>".format(self.rptr)
+
 class IpAddress(object):
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
+        self._rdns = None
+
+    @property
+    def rdns(self):
+        """
+        Get or set reverse DNS PTRs.
+        """
+        if self._rdns is None:
+            self._rdns = ReverseDNS(self.conn, self.ip)
+        return self._rdns
 
     def update_info(self, result=None):
         """

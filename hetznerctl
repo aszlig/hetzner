@@ -203,7 +203,11 @@ class ShowServer(Options):
             self.print_line(key, val)
 
         for ip in server.ips:
-            self.print_line("IP address", ip.ip)
+            if ip.rdns.ptr is None:
+                addr = ip.ip
+            else:
+                addr = "{0} (rPTR: {1})".format(ip.ip, ip.rdns.ptr)
+            self.print_line("IP address", addr)
 
         for net in server.subnets:
             self.print_line("Subnet", "{0}/{1}".format(net.net_ip,
