@@ -85,3 +85,56 @@ def parse_ipaddr(addr, is_ipv6=None):
         return True, parse_ipv6(addr)
     else:
         return False, parse_ipv4(addr)
+
+
+def get_ipv4_range(numeric_netaddr, prefix_len):
+    """
+    Return the smallest and biggest possible IPv4 address of the specified
+    network address (in numeric representation) and prefix length.
+
+    The range doesn't include the broadcast address.
+
+    >>> get_ipv4_range(0xac100000, 12)
+    (2886729728, 2887778302)
+    >>> get_ipv4_range(0xa1b2c3d4, 16)
+    (2712797184, 2712862718)
+    >>> get_ipv4_range(0xa1b2c3d4, 32)
+    (2712847316, 2712847316)
+    >>> get_ipv4_range(0xa1b2c3d4, 0)
+    (0, 4294967294)
+    >>> get_ipv4_range(0x01, 64)
+    Traceback (most recent call last):
+        ...
+    ValueError: negative shift count
+    """
+    mask_inverted = 32 - prefix_len
+    mask_bin = 0xffffffff >> mask_inverted << mask_inverted
+    range_start = numeric_netaddr & mask_bin
+    range_end = range_start | (1 << mask_inverted) - 1
+    return range_start, max(range_start, range_end - 1)
+
+
+def get_ipv6_range(numeric_netaddr, prefix_len):
+    """
+    Return the smallest and biggest possible IPv6 address of the specified
+    network address (in numeric representation) and prefix length.
+
+    >>> get_ipv6_range(0x00010203ff05060708091a1b1c1d1e1f, 36)
+    (5233173638632030885207665411096576L, 5233178590392188026728765007593471L)
+    >>> get_ipv6_range(0x000102030405060708091a1b1c1d1e1f, 64)
+    (5233100606242805471950326074441728L, 5233100606242823918694399783993343L)
+    >>> get_ipv6_range(0x000102030405060708091a1b1c1d1e1f, 128)
+    (5233100606242806050973056906370591L, 5233100606242806050973056906370591L)
+    >>> get_ipv6_range(0x000102030405060708091a1b1c1d1e1f, 0)
+    (0L, 340282366920938463463374607431768211455L)
+    >>> get_ipv6_range(0x01, 256)
+    Traceback (most recent call last):
+        ...
+    ValueError: negative shift count
+    """
+    mask_bin_full = 0xffffffffffffffffffffffffffffffff
+    mask_inverted = 128 - prefix_len
+    mask_bin = mask_bin_full >> mask_inverted << mask_inverted
+    range_start = numeric_netaddr & mask_bin
+    range_end = range_start | (1 << mask_inverted) - 1
+    return range_start, range_end
