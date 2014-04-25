@@ -11,7 +11,7 @@ from datetime import datetime
 from urllib import urlencode
 
 from hetzner import RobotError, ManualReboot, ConnectError
-from hetzner.util import parse_ipaddr
+from hetzner import util
 
 
 class SSHAskPassHelper(object):
@@ -316,8 +316,18 @@ class Subnet(object):
         self.traffic_daily = data['traffic_daily']
         self.traffic_monthly = data['traffic_monthly']
 
-        self.is_ipv6, self.numeric_net_ip = parse_ipaddr(self.net_ip)
-        self.numeric_gateway = parse_ipaddr(self.gateway, self.is_ipv6)
+        self.is_ipv6, self.numeric_net_ip = util.parse_ipaddr(self.net_ip)
+        self.numeric_gateway = util.parse_ipaddr(self.gateway, self.is_ipv6)
+        getrange = util.get_ipv6_range if self.is_ipv6 else util.get_ipv4_range
+        self.numeric_range = getrange(self.numeric_net_ip, self.mask)
+
+    def get_ip_range(self):
+        """
+        Return the smallest and biggest possible IP address of the current
+        subnet.
+        """
+        convert = util.ipv6_bin2addr if self.is_ipv6 else util.ipv4_bin2addr
+        return convert(self.numeric_range[0]), convert(self.numeric_range[1])
 
     def __repr__(self):
         return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
