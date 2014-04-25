@@ -53,16 +53,17 @@ def parse_ipaddr(addr, is_ipv6=None):
     whether the given address is an IPv6 address and the numeric representation
     of the address.
 
-    If is_ipv6 is either True or False, the specific address type is enforced.
+    If is_ipv6 is either True or False, the specific address type is enforced
+    and only the parsed address is returned instead of a tuple.
 
     >>> parse_ipaddr('1.2.3.4')
     (False, 16909060)
     >>> parse_ipaddr('255.255.0.0', False)
-    (False, 4294901760)
+    4294901760
     >>> parse_ipaddr('dead::beef')
     (True, 295986882420777848964380943247191621359L)
     >>> parse_ipaddr('ffff::ffff', True)
-    (True, 340277174624079928635746076935439056895L)
+    340277174624079928635746076935439056895L
     >>> parse_ipaddr('1.2.3.4', True)
     Traceback (most recent call last):
         ...
@@ -82,9 +83,9 @@ def parse_ipaddr(addr, is_ipv6=None):
         except socket.error:
             return True, parse_ipv6(addr)
     elif is_ipv6:
-        return True, parse_ipv6(addr)
+        return parse_ipv6(addr)
     else:
-        return False, parse_ipv4(addr)
+        return parse_ipv4(addr)
 
 
 def get_ipv4_range(numeric_netaddr, prefix_len):
