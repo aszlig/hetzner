@@ -138,3 +138,45 @@ def get_ipv6_range(numeric_netaddr, prefix_len):
     range_start = numeric_netaddr & mask_bin
     range_end = range_start | (1 << mask_inverted) - 1
     return range_start, range_end
+
+
+def ipv4_bin2addr(numeric_addr):
+    """
+    Convert a numeric representation of the given IPv4 address into quad-dotted
+    notation.
+
+    >>> ipv4_bin2addr(0x01020304)
+    '1.2.3.4'
+    >>> ipv4_bin2addr(0x0000ffff)
+    '0.0.255.255'
+    >>> ipv4_bin2addr(0xffff0000)
+    '255.255.0.0'
+    >>> ipv4_bin2addr(0xa1ffff0000)
+    Traceback (most recent call last):
+        ...
+    error: 'L' format requires 0 <= number <= 4294967295
+    """
+    packed = struct.pack('!L', numeric_addr)
+    return socket.inet_ntop(socket.AF_INET, packed)
+
+
+def ipv6_bin2addr(numeric_addr):
+    """
+    Convert a numeric representation of the given IPv6 address into a shortened
+    hexadecimal notiation separated by colons.
+
+    >>> ipv6_bin2addr(0x01020304050607080910111213141516)
+    '102:304:506:708:910:1112:1314:1516'
+    >>> ipv6_bin2addr(0xffff000000000dead00000beef000000)
+    'ffff::dea:d000:be:ef00:0'
+    >>> ipv6_bin2addr(0x123400000000000000000000000000ff)
+    '1234::ff'
+    >>> ipv6_bin2addr(0xa1ffff0000000000000000000000000000)
+    Traceback (most recent call last):
+        ...
+    error: integer out of range for 'Q' format code
+    """
+    high = numeric_addr >> 64
+    low = numeric_addr & 0xffffffffffffffff
+    packed = struct.pack('!QQ', high, low)
+    return socket.inet_ntop(socket.AF_INET6, packed)
