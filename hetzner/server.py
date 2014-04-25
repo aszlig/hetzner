@@ -234,6 +234,7 @@ class ReverseDNS(object):
     def __repr__(self):
         return "<ReverseDNS PTR: {0}>".format(self.rptr)
 
+
 class IpAddress(object):
     def __init__(self, conn, result, subnet_ip=None):
         self.conn = conn
