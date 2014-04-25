@@ -235,8 +235,9 @@ class ReverseDNS(object):
         return "<ReverseDNS PTR: {0}>".format(self.rptr)
 
 class IpAddress(object):
-    def __init__(self, conn, result):
+    def __init__(self, conn, result, subnet_ip=None):
         self.conn = conn
+        self.subnet_ip = subnet_ip
         self.update_info(result)
         self._rdns = None
 
@@ -255,10 +256,18 @@ class IpAddress(object):
         information such as traffic warnings. If result is omitted, a new
         request is sent to the robot to gather the information.
         """
-        if result is None:
-            result = self.conn.get('/ip/{0}'.format(self.ip))
-
-        data = result['ip']
+        if self.subnet_ip is not None:
+            if result is None:
+                result = self.conn.get('/subnet/{0}'.format(self._subnet_addr))
+            data = result['subnet']
+            self._subnet_addr = data['ip']
+            data['ip'] = self.subnet_ip
+            # Does not exist in subnets
+            data['separate_mac'] = None
+        else:
+            if result is None:
+                result = self.conn.get('/ip/{0}'.format(self.ip))
+            data = result['ip']
 
         self.ip = data['ip']
         self.server_ip = data['server_ip']
@@ -335,6 +344,17 @@ class Subnet(object):
         """
         numeric_addr = util.parse_ipaddr(addr, self.is_ipv6)
         return self.numeric_range[0] <= numeric_addr <= self.numeric_range[1]
+
+    def get_ip(self, addr):
+        """
+        Return an IpAddress object for the specified IPv4 or IPv6 address or
+        None if the IP address doesn't exist in the current subnet.
+        """
+        if addr in self:
+            result = self.conn.get('/subnet/{0}'.format(self.net_ip))
+            return IpAddress(self.conn, result, addr)
+        else:
+            return None
 
     def __repr__(self):
         return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
