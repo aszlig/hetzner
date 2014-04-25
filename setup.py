@@ -8,5 +8,6 @@ setup(name='hetzner',
       author='aszlig',
       author_email='aszlig@redmoonstudios.org',
       scripts=['hetznerctl'],
-      py_modules=['hetzner', 'hetzner.robot', 'hetzner.server'],
+      py_modules=['hetzner', 'hetzner.robot', 'hetzner.server',
+                  'hetzner.util'],
       license='BSD')
