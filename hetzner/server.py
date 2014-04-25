@@ -11,6 +11,7 @@ from datetime import datetime
 from urllib import urlencode
 
 from hetzner import RobotError, ManualReboot, ConnectError
+from hetzner.util import parse_ipaddr
 
 
 class SSHAskPassHelper(object):
@@ -314,6 +315,9 @@ class Subnet(object):
         self.traffic_hourly = data['traffic_hourly']
         self.traffic_daily = data['traffic_daily']
         self.traffic_monthly = data['traffic_monthly']
+
+        self.is_ipv6, self.numeric_net_ip = parse_ipaddr(self.net_ip)
+        self.numeric_gateway = parse_ipaddr(self.gateway, self.is_ipv6)
 
     def __repr__(self):
         return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,

@@ -210,8 +210,9 @@ class ShowServer(Options):
             self.print_line("IP address", addr)
 
         for net in server.subnets:
-            self.print_line("Subnet", "{0}/{1}".format(net.net_ip,
-                                                       net.mask))
+            addrtype = "IPv6" if net.is_ipv6 else "IPv4"
+            addr = "{0}/{1} ({2})".format(net.net_ip, net.mask, addrtype)
+            self.print_line("Subnet", addr)
             self.print_line("Gateway", net.gateway)
 
 
