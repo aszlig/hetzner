@@ -301,7 +301,7 @@ class Subnet(object):
         request is sent to the robot to gather the information.
         """
         if result is None:
-            result = self.conn.get('/ip/{0}'.format(self.net_ip))
+            result = self.conn.get('/subnet/{0}'.format(self.net_ip))
 
         data = result['subnet']
 
