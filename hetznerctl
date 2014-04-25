@@ -211,8 +211,10 @@ class ShowServer(Options):
 
         for net in server.subnets:
             addrtype = "IPv6" if net.is_ipv6 else "IPv4"
+            addrrange = "{0} - {1}".format(*net.get_ip_range())
             addr = "{0}/{1} ({2})".format(net.net_ip, net.mask, addrtype)
             self.print_line("Subnet", addr)
+            self.print_line("Range", addrrange)
             self.print_line("Gateway", net.gateway)
 
 
