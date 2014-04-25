@@ -329,6 +329,13 @@ class Subnet(object):
         convert = util.ipv6_bin2addr if self.is_ipv6 else util.ipv4_bin2addr
         return convert(self.numeric_range[0]), convert(self.numeric_range[1])
 
+    def __contains__(self, addr):
+        """
+        Check whether a specific IP address is within the current subnet.
+        """
+        numeric_addr = util.parse_ipaddr(addr, self.is_ipv6)
+        return self.numeric_range[0] <= numeric_addr <= self.numeric_range[1]
+
     def __repr__(self):
         return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
                                                         self.gateway)
