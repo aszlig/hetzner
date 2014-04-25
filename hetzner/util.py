@@ -92,16 +92,14 @@ def get_ipv4_range(numeric_netaddr, prefix_len):
     Return the smallest and biggest possible IPv4 address of the specified
     network address (in numeric representation) and prefix length.
 
-    The range doesn't include the broadcast address.
-
     >>> get_ipv4_range(0xac100000, 12)
-    (2886729728, 2887778302)
+    (2886729728, 2887778303)
     >>> get_ipv4_range(0xa1b2c3d4, 16)
-    (2712797184, 2712862718)
+    (2712797184, 2712862719)
     >>> get_ipv4_range(0xa1b2c3d4, 32)
     (2712847316, 2712847316)
     >>> get_ipv4_range(0xa1b2c3d4, 0)
-    (0, 4294967294)
+    (0, 4294967295)
     >>> get_ipv4_range(0x01, 64)
     Traceback (most recent call last):
         ...
@@ -111,7 +109,7 @@ def get_ipv4_range(numeric_netaddr, prefix_len):
     mask_bin = 0xffffffff >> mask_inverted << mask_inverted
     range_start = numeric_netaddr & mask_bin
     range_end = range_start | (1 << mask_inverted) - 1
-    return range_start, max(range_start, range_end - 1)
+    return range_start, range_end
 
 
 def get_ipv6_range(numeric_netaddr, prefix_len):
