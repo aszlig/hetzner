@@ -1,5 +1,28 @@
 #!/usr/bin/env python
-from distutils.core import setup
+import os
+import sys
+
+from distutils.core import setup, Command
+
+PYTHON_MODULES = ['hetzner', 'hetzner.robot', 'hetzner.server', 'hetzner.util']
+
+
+class RunTests(Command):
+    description = "run test suite"
+    user_options = []
+    initialize_options = finalize_options = lambda self: None
+
+    def run(self):
+        from doctest import testmod
+        for module in PYTHON_MODULES:
+            modpath = os.path.join(*module.split('.'))
+            package, name = os.path.split(modpath)
+            sys.path.insert(0, package)
+            imported = __import__(name)
+            del sys.path[0]
+            failures, _ = testmod(imported, report=True)
+            if failures > 0:
+                raise SystemExit(1)
 
 setup(name='hetzner',
       version='0.7.0',
@@ -8,6 +31,6 @@ setup(name='hetzner',
       author='aszlig',
       author_email='aszlig@redmoonstudios.org',
       scripts=['hetznerctl'],
-      py_modules=['hetzner', 'hetzner.robot', 'hetzner.server',
-                  'hetzner.util'],
+      py_modules=PYTHON_MODULES,
+      cmdclass={'test': RunTests},
       license='BSD')
