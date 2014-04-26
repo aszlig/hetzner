@@ -213,26 +213,47 @@ class AdminAccount(object):
 
 
 class ReverseDNS(object):
-    def __init__(self, conn, ip):
+    def __init__(self, conn, ip=None, result=None):
         self.conn = conn
         self.ip = ip
-        self.update_info()
+        self.update_info(result)
 
-    def update_info(self):
-        try:
-            result = self.conn.get('/rdns/{0}'.format(self.ip))
-        except RobotError as err:
-            if err.status == 404:
-                result = None
+    def update_info(self, result=None):
+        if result is None:
+            try:
+                result = self.conn.get('/rdns/{0}'.format(self.ip))
+            except RobotError as err:
+                if err.status == 404:
+                    result = None
+                else:
+                    raise
 
         if result is not None:
             data = result['rdns']
+            self.ip = data['ip']
             self.ptr = data['ptr']
         else:
             self.ptr = None
 
     def __repr__(self):
         return "<ReverseDNS PTR: {0}>".format(self.rptr)
+
+
+class ReverseDNSManager(object):
+    def __init__(self, conn, main_ip):
+        self.conn = conn
+        self.main_ip = main_ip
+
+    def __iter__(self):
+        data = urlencode({'server_ip': self.main_ip})
+        try:
+            result = self.conn.get('/rdns?{0}'.format(data))
+        except RobotError as err:
+            if err.status == 404:
+                result = []
+            else:
+                raise
+        return iter([ReverseDNS(self.conn, result=rdns) for rdns in result])
 
 
 class IpAddress(object):
@@ -392,6 +413,7 @@ class Server(object):
         self.rescue = RescueSystem(self)
         self.ips = IpManager(self.conn, self.ip)
         self.subnets = SubnetManager(self.conn, self.ip)
+        self.rdns = ReverseDNSManager(self.conn, self.ip)
         self._admin_account = None
 
     @property
