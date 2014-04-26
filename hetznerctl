@@ -217,6 +217,10 @@ class ShowServer(Options):
             self.print_line("Range", addrrange)
             self.print_line("Gateway", net.gateway)
 
+        for rdns in server.rdns:
+            rptr = "{0} -> {1}".format(rdns.ip, rdns.ptr)
+            self.print_line("Reverse PTR", rptr)
+
 
 class Main(Options):
     subcommands = [
