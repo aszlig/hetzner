@@ -4,6 +4,7 @@ from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error
 
 from hetzner.robot import Robot
+from hetzner.server import ReverseDNSManager  # XXX!
 
 
 class Options(object):
@@ -220,6 +221,21 @@ class ShowServer(Options):
             self.print_line("Reverse PTR", rptr)
 
 
+class ReverseDNS(Options):
+    command = 'rdns'
+    description = "List and set reverse DNS records."
+    usage = "%prog ip"
+
+    def execute(self):
+        robot = self.parent.robot
+        if len(self.args) == 0:
+            for rdns in robot.rdns:
+                rptr = "{0} -> {1}".format(rdns.ip, rdns.ptr)
+                print(rptr)
+        else:
+            print(robot.rdns.get(self.args[0]))
+
+
 class Main(Options):
     subcommands = [
         Reboot,
@@ -227,6 +243,7 @@ class Main(Options):
         SetName,
         ListServers,
         ShowServer,
+        ReverseDNS
     ]
 
     @property

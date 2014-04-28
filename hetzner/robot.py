@@ -9,7 +9,7 @@ from httplib import HTTPSConnection, BadStatusLine, ResponseNotReady
 from tempfile import NamedTemporaryFile
 
 from hetzner import WebRobotError, RobotError
-from hetzner.server import Server
+from hetzner.server import Server, ReverseDNSManager  # XXX!
 
 ROBOT_HOST = "robot-ws.your-server.de"
 ROBOT_WEBHOST = "robot.your-server.de"
@@ -260,3 +260,4 @@ class Robot(object):
     def __init__(self, user, passwd):
         self.conn = RobotConnection(user, passwd)
         self.servers = ServerManager(self.conn)
+        self.rdns = ReverseDNSManager(self.conn)

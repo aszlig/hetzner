@@ -240,14 +240,21 @@ class ReverseDNS(object):
 
 
 class ReverseDNSManager(object):
-    def __init__(self, conn, main_ip):
+    def __init__(self, conn, main_ip=None):
         self.conn = conn
         self.main_ip = main_ip
 
+    def get(self, ip):
+        return ReverseDNS(self.conn, ip)
+
     def __iter__(self):
-        data = urlencode({'server_ip': self.main_ip})
+        if self.main_ip is None:
+            url = '/rdns'
+        else:
+            data = urlencode({'server_ip': self.main_ip})
+            url = '/rdns?{0}'.format(data)
         try:
-            result = self.conn.get('/rdns?{0}'.format(data))
+            result = self.conn.get(url)
         except RobotError as err:
             if err.status == 404:
                 result = []
