@@ -224,7 +224,11 @@ class ShowServer(Options):
 class ReverseDNS(Options):
     command = 'rdns'
     description = "List and set reverse DNS records."
-    usage = "%prog ip"
+    usage = "%prog [-s] ip value"
+    option_list = [
+        make_option('-s', '--set', dest='setptr', action='store_true',
+                    default=False, help="Set a new reverse PTR")
+    ]
 
     def execute(self):
         robot = self.parent.robot
@@ -232,6 +236,13 @@ class ReverseDNS(Options):
             for rdns in robot.rdns:
                 rptr = "{0} -> {1}".format(rdns.ip, rdns.ptr)
                 print(rptr)
+        elif self.options.setptr:
+            if len(self.args) != 2:
+                self.parser.error("Need exactly two arguments: IP address and"
+                                  " new reverse FQDN.")
+            else:
+                rdns = robot.rdns.get(self.args[0])
+                rdns.set(self.args[1])
         else:
             print(robot.rdns.get(self.args[0]))
 

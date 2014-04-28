@@ -26,6 +26,9 @@ class ReverseDNS(object):
         else:
             self.ptr = None
 
+    def set(self, value):
+        pass
+
     def __repr__(self):
         return "<ReverseDNS PTR: {0}>".format(self.ptr)
 
