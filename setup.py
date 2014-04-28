@@ -4,7 +4,13 @@ import sys
 
 from distutils.core import setup, Command
 
-PYTHON_MODULES = ['hetzner', 'hetzner.robot', 'hetzner.server', 'hetzner.util']
+PYTHON_MODULES = [
+    'hetzner',
+    'hetzner.rdns',
+    'hetzner.robot',
+    'hetzner.server',
+    'hetzner.util',
+]
 
 
 class RunTests(Command):

@@ -10,8 +10,8 @@ from tempfile import mkdtemp
 from datetime import datetime
 from urllib import urlencode
 
-from hetzner import RobotError, ManualReboot, ConnectError
-from hetzner import util
+from hetzner import util, RobotError, ManualReboot, ConnectError
+from hetzner.rdns import ReverseDNS, ReverseDNSManager
 
 
 class SSHAskPassHelper(object):
@@ -210,57 +210,6 @@ class AdminAccount(object):
             return "<AdminAccount login: {0}>".format(self.login)
         else:
             return "<AdminAccount missing>"
-
-
-class ReverseDNS(object):
-    def __init__(self, conn, ip=None, result=None):
-        self.conn = conn
-        self.ip = ip
-        self.update_info(result)
-
-    def update_info(self, result=None):
-        if result is None:
-            try:
-                result = self.conn.get('/rdns/{0}'.format(self.ip))
-            except RobotError as err:
-                if err.status == 404:
-                    result = None
-                else:
-                    raise
-
-        if result is not None:
-            data = result['rdns']
-            self.ip = data['ip']
-            self.ptr = data['ptr']
-        else:
-            self.ptr = None
-
-    def __repr__(self):
-        return "<ReverseDNS PTR: {0}>".format(self.ptr)
-
-
-class ReverseDNSManager(object):
-    def __init__(self, conn, main_ip=None):
-        self.conn = conn
-        self.main_ip = main_ip
-
-    def get(self, ip):
-        return ReverseDNS(self.conn, ip)
-
-    def __iter__(self):
-        if self.main_ip is None:
-            url = '/rdns'
-        else:
-            data = urlencode({'server_ip': self.main_ip})
-            url = '/rdns?{0}'.format(data)
-        try:
-            result = self.conn.get(url)
-        except RobotError as err:
-            if err.status == 404:
-                result = []
-            else:
-                raise
-        return iter([ReverseDNS(self.conn, result=rdns) for rdns in result])
 
 
 class IpAddress(object):

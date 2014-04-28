@@ -4,7 +4,7 @@ from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error
 
 from hetzner.robot import Robot
-from hetzner.server import ReverseDNSManager  # XXX!
+from hetzner.rdns import ReverseDNSManager
 
 
 class Options(object):
