@@ -236,7 +236,7 @@ class ReverseDNS(object):
             self.ptr = None
 
     def __repr__(self):
-        return "<ReverseDNS PTR: {0}>".format(self.rptr)
+        return "<ReverseDNS PTR: {0}>".format(self.ptr)
 
 
 class ReverseDNSManager(object):
