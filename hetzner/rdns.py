@@ -27,7 +27,7 @@ class ReverseDNS(object):
             self.ptr = None
 
     def set(self, value):
-        pass
+        self.conn.post('/rdns/{0}'.format(self.ip), {'ptr': value})
 
     def __repr__(self):
         return "<ReverseDNS PTR: {0}>".format(self.ptr)
