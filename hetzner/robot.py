@@ -193,7 +193,7 @@ class RobotConnection(object):
             self.conn.connect()
             return self._request(method, path, data, headers, retry - 1)
 
-    def request(self, method, path, data=None):
+    def request(self, method, path, data=None, allow_empty=False):
         if data is not None:
             data = urlencode(data)
 
@@ -208,14 +208,17 @@ class RobotConnection(object):
 
         response = self._request(method, path, data, headers)
         raw_data = response.read()
-        if len(raw_data) == 0:
+        if len(raw_data) == 0 and not allow_empty:
             msg = "Empty resonse, status {0}."
             raise RobotError(msg.format(response.status), response.status)
-        try:
-            data = json.loads(raw_data)
-        except ValueError:
-            msg = "Response is not JSON (status {0}): {1}"
-            raise RobotError(msg.format(response.status, repr(raw_data)))
+        elif not allow_empty:
+            try:
+                data = json.loads(raw_data)
+            except ValueError:
+                msg = "Response is not JSON (status {0}): {1}"
+                raise RobotError(msg.format(response.status, repr(raw_data)))
+        else:
+            data = None
 
         if 200 <= response.status < 300:
             return data
@@ -240,7 +243,7 @@ class RobotConnection(object):
     get = lambda s, p: s.request('GET', p)
     post = lambda s, p, d: s.request('POST', p, d)
     put = lambda s, p, d: s.request('PUT', p, d)
-    delete = lambda s, p, d: s.request('DELETE', p, d)
+    delete = lambda s, p, d=None: s.request('DELETE', p, d, allow_empty=True)
 
 
 class ServerManager(object):
