@@ -183,7 +183,7 @@ class ShowServer(Options):
             self.print_serverinfo(robot.servers.get(ip))
 
     def print_line(self, key, val):
-        print("{0:<15}{1}".format(key + ":", val))
+        print(u"{0:<15}{1}".format(key + u":", val))
 
     def print_serverinfo(self, server):
         info = [
