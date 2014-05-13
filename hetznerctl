@@ -158,7 +158,7 @@ class ListServers(Options):
         for server in robot.servers:
             info = {
                 'id': server.number,
-                'model': server.product.encode("latin1", "ignore")
+                'model': server.product
             }
 
             if server.name != "":
