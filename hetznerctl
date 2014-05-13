@@ -165,10 +165,10 @@ class ListServers(Options):
             if server.name != "":
                 info['name'] = server.name
 
-            infolist = ["{0}: {1}".format(key, val)
+            infolist = [u"{0}: {1}".format(key, val)
                         for key, val in info.iteritems()]
 
-            print("{0} ({1})".format(server.ip, ", ".join(infolist)))
+            print(u"{0} ({1})".format(server.ip, u", ".join(infolist)))
 
 
 class ShowServer(Options):
