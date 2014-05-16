@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import sys
+import locale
+
 from os.path import expanduser
 from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error
@@ -64,6 +67,14 @@ class Options(object):
 
             map(lambda x: x(argv, self), matches)
 
+    def putline(self, line):
+        data = line + "\n"
+        try:
+            sys.stdout.write(data)
+        except UnicodeEncodeError:
+            preferred = locale.getpreferredencoding()
+            sys.stdout.write(data.encode(preferred, 'replace'))
+
     def execute(self, *args):
         pass
 
@@ -125,8 +136,9 @@ class Rescue(Options):
 
             if self.options.noshell:
                 server.rescue.observed_activate(**kwargs)
-                print("Password for {0}: {1}".format(server.ip,
-                                                     server.rescue.password))
+                msg = u"Password for {0}: {1}".format(server.ip,
+                                                      server.rescue.password)
+                self.putline(msg)
             else:
                 server.rescue.shell(**kwargs)
 
@@ -167,7 +179,7 @@ class ListServers(Options):
             infolist = [u"{0}: {1}".format(key, val)
                         for key, val in info.iteritems()]
 
-            print(u"{0} ({1})".format(server.ip, u", ".join(infolist)))
+            self.putline(u"{0} ({1})".format(server.ip, u", ".join(infolist)))
 
 
 class ShowServer(Options):
@@ -182,7 +194,7 @@ class ShowServer(Options):
             self.print_serverinfo(robot.servers.get(ip))
 
     def print_line(self, key, val):
-        print(u"{0:<15}{1}".format(key + u":", val))
+        self.putline(u"{0:<15}{1}".format(key + u":", val))
 
     def print_serverinfo(self, server):
         info = [
@@ -203,12 +215,13 @@ class ShowServer(Options):
             self.print_line(key, val)
 
         for ip in server.ips:
-            self.print_line("IP address", ip.ip)
+            self.print_line(u"IP address", ip.ip)
 
         for net in server.subnets:
-            self.print_line("Subnet", "{0}/{1}".format(net.net_ip,
-                                                             net.mask))
-            self.print_line("Gateway", net.gateway)
+            self.print_line(u"Subnet", u"{0}/{1}".format(net.net_ip,
+                                                         net.mask))
+            self.print_line(u"Gateway", net.gateway)
+
 
 class Main(Options):
     subcommands = [
