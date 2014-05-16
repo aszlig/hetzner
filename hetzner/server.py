@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 import random
 import socket
@@ -130,20 +131,7 @@ class RescueSystem(object):
         self.observed_activate(*args, **kwargs)
 
         with SSHAskPassHelper(self.password) as askpass:
-            ssh_options = [
-                'CheckHostIP=no',
-                'GlobalKnownHostsFile=/dev/null',
-                'UserKnownHostsFile=/dev/null',
-                'StrictHostKeyChecking=no',
-                'LogLevel=quiet',
-            ]
-            ssh_args = reduce(lambda acc, opt: acc + ['-o', opt],
-                              ssh_options, [])
-            cmd = ['ssh'] + ssh_args + ["root@{0}".format(self.server.ip)]
-            env = dict(os.environ)
-            env['DISPLAY'] = ":666"
-            env['SSH_ASKPASS'] = askpass
-            subprocess.check_call(cmd, env=env, preexec_fn=os.setsid)
+            self.server.shell(args, kwargs, askpass=askpass)
 
         self.observed_deactivate(*args, **kwargs)
 
@@ -412,6 +400,7 @@ class Server(object):
         self.cancelled = data['cancelled']
         self.paid_until = datetime.strptime(data['paid_until'], '%Y-%m-%d')
         self.is_vserver = self.product.startswith('VQ')
+        self.is_dell = self.product.startswith('DELL')
 
     def set_name(self, name):
         result = self.conn.post('/server/{0}'.format(self.ip),
@@ -451,14 +440,24 @@ class Server(object):
         is_down = False
 
         if tries is None:
-            if self.is_vserver:
+            if self.is_dell:
+                tries = ['ssh', 'rac']
+
+                # These servers take more than 5 minutes to reboot.
+                if patience <= 300:
+                    patience = 600
+            elif self.is_vserver:
                 tries = ['hard']
             else:
                 tries = ['soft', 'hard']
 
         for mode in tries:
-            self.reboot(mode)
+            print("Rebooting mode: {0}".format(mode))
+            if not self.reboot(mode):
+                continue
 
+            sys.stdout.write("Waiting for the server to come back")
+            sys.stdout.flush()
             now = time.time()
             while True:
                 if time.time() > now + patience:
@@ -471,6 +470,8 @@ class Server(object):
                     return
                 elif not is_down:
                     is_down = not is_up
+                sys.stdout.write(".")
+                sys.stdout.flush()
         if manual:
             self.reboot('manual')
             raise ManualReboot("Issued a manual reboot because the server"
@@ -488,6 +489,32 @@ class Server(object):
         On a vServer, rebooting with mode="soft" is a no-op, any other value
         results in a hard reset.
         """
+
+        if self.is_dell:
+            if mode == "ssh":
+                # XXX: Warning, this only works for linux/unix systems.
+
+                try:
+                    self.shell(None, cmdline="reboot")
+                except Exception, ex:
+                    print ex
+                    return False
+
+                return True
+            elif mode == "rac":
+                try:
+                    ips = list(self.ips)
+                    ip = ips[1].ip
+                except:
+                    ip = ""
+
+                rac = RAC(ip)
+                rac.powercycle()
+
+                return True
+            if mode != "ssh":
+                raise RobotError("DELL servers don't allow reboot via robot.")
+
         if self.is_vserver:
             if mode == 'soft':
                 return
@@ -508,5 +535,89 @@ class Server(object):
         modekey = modes.get(mode, modes['soft'])
         return self.conn.post('/reset/{0}'.format(self.ip), {'type': modekey})
 
+    def shell(self, *args, **kwargs):
+        env = dict(os.environ)
+
+        if "askpass" in kwargs:
+            env['SSH_ASKPASS'] = kwargs.get("askpass")
+
+        ssh_options = [
+            'CheckHostIP=no',
+            'GlobalKnownHostsFile=/dev/null',
+            'UserKnownHostsFile=/dev/null',
+            'StrictHostKeyChecking=no',
+            'LogLevel=quiet',
+        ]
+        ssh_args = reduce(lambda acc, opt: acc + ['-o', opt],
+                          ssh_options, [])
+        cmd = (['ssh'] +
+               ssh_args +
+               ["root@{0}".format(self.ip)] +
+               [kwargs.get("cmdline", "")])
+
+        env['DISPLAY'] = ":666"
+        subprocess.check_call(cmd, env=env, preexec_fn=os.setsid)
+
     def __repr__(self):
         return "<{0} (#{1} {2})>".format(self.ip, self.number, self.product)
+
+
+# Code got from https://github.com/migrantgeek/python-rac
+
+class RAC(object):
+
+    def __init__(self, host):
+        import getpass
+        self.sid = None
+
+        self.host = raw_input("IP of the iDRAC console [{0}]:".format(host)) or host
+        self.username = raw_input("Username [root]:") or "root"
+        self.password = getpass.getpass("Password:")
+
+    def _inject_header(self, data):
+        if data is not None:
+            return "<?xml version='1.0'?>" + data
+
+    def _extract_value(self, data, value):
+        if data is None:
+            return
+        try:
+            return data.split('<%s>' % value)[1].split('</%s>' % value)[0]
+        except KeyError:
+            raise Exception('unable to extract %s' % value)
+
+    def _extract_sid(self, data):
+        return self._extract_value(data, 'SID')
+
+    def _extract_cmd_output(self, data):
+        return self._extract_value(data, 'CMDOUTPUT')
+
+    def _make_request(self, uri, data=None):
+        import urllib2
+
+        opener = urllib2.build_opener()
+        if self.sid:
+            opener.addheaders.append(('Cookie', 'sid=%s' % self.sid))
+        return opener.open('https://%s/cgi-bin/%s' % (self.host, uri),
+                self._inject_header(data)).read()
+
+    def _login(self):
+        data = '<LOGIN><REQ><USERNAME>%s</USERNAME><PASSWORD>%s</PASSWORD></REQ></LOGIN>' % (self.username, self.password)
+        resp = self._make_request('/login', data)
+        self.sid = self._extract_sid(resp)
+
+    def _logout(self):
+        self.sid = None
+        self._make_request('/logout')
+
+    def run_command(self, cmd):
+        if self.sid is None:
+            self._login()
+        try:
+            data = '<EXEC><REQ><CMDINPUT>racadm %s</CMDINPUT><MAXOUTPUTLEN>0x0fff</MAXOUTPUTLEN></REQ></EXEC>' % cmd
+            return self._extract_cmd_output(self._make_request('/exec', data)).strip()
+        finally:
+            self._logout()
+
+    def powercycle(self):
+        return self.run_command('serveraction powercycle')
