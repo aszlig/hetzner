@@ -5,6 +5,7 @@ import random
 import socket
 import string
 import subprocess
+import warnings
 
 from tempfile import mkdtemp
 from datetime import datetime
@@ -121,6 +122,11 @@ class RescueSystem(object):
 
         Look at Server.observed_reboot() for further options.
         """
+        msg = ("The RescueSystem.shell() method will be removed from the API"
+               " in version 1.0.0, please do not use it! See"
+               " https://github.com/RedMoonStudios/hetzner/issues/13"
+               " for details.")
+        warnings.warn(msg, FutureWarning)
         self.observed_activate(*args, **kwargs)
 
         with SSHAskPassHelper(self.password) as askpass:

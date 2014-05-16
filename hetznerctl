@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import warnings
+
 from os.path import expanduser
 from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error
@@ -129,7 +131,9 @@ class Rescue(Options):
                 print("Password for {0}: {1}".format(server.ip,
                                                      server.rescue.password))
             else:
-                server.rescue.shell(**kwargs)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    server.rescue.shell(**kwargs)
 
 
 class SetName(Options):
