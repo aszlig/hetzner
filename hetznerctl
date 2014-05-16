@@ -78,7 +78,8 @@ class Reboot(Options):
     usage = "%prog ip..."
     option_list = [
         make_option('-m', '--method', dest='method',
-                    choices=['soft', 'hard', 'manual'], default='soft',
+                    choices=['soft', 'hard', 'manual', 'ssh', 'rac'],
+                    default='soft',
                     help="The method to use for the reboot"
                          " (Default: %default).")
     ]
