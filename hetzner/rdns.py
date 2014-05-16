@@ -2,6 +2,8 @@ from urllib import urlencode
 
 from hetzner import RobotError
 
+__all__ = ['ReverseDNS', 'ReverseDNSManager']
+
 
 class ReverseDNS(object):
     def __init__(self, conn, ip=None, result=None):

@@ -15,6 +15,8 @@ from hetzner.rdns import ReverseDNSManager
 ROBOT_HOST = "robot-ws.your-server.de"
 ROBOT_WEBHOST = "robot.your-server.de"
 
+__all__ = ['Robot', 'RobotConnection', 'RobotWebInterface', 'ServerManager']
+
 
 class ValidatedHTTPSConnection(HTTPSConnection):
     # Thawte Premium Server CA
