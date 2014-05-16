@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import sys
+import locale
 import warnings
 
 from os.path import expanduser
@@ -67,6 +69,14 @@ class Options(object):
 
             map(lambda x: x(argv, self), matches)
 
+    def putline(self, line):
+        data = line + "\n"
+        try:
+            sys.stdout.write(data)
+        except UnicodeEncodeError:
+            preferred = locale.getpreferredencoding()
+            sys.stdout.write(data.encode(preferred, 'replace'))
+
     def execute(self, *args):
         pass
 
@@ -128,8 +138,9 @@ class Rescue(Options):
 
             if self.options.noshell:
                 server.rescue.observed_activate(**kwargs)
-                print("Password for {0}: {1}".format(server.ip,
-                                                     server.rescue.password))
+                msg = u"Password for {0}: {1}".format(server.ip,
+                                                      server.rescue.password)
+                self.putline(msg)
             else:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -163,16 +174,16 @@ class ListServers(Options):
         for server in robot.servers:
             info = {
                 'id': server.number,
-                'model': server.product.encode("latin1", "ignore")
+                'model': server.product
             }
 
             if server.name != "":
                 info['name'] = server.name
 
-            infolist = ["{0}: {1}".format(key, val)
+            infolist = [u"{0}: {1}".format(key, val)
                         for key, val in info.iteritems()]
 
-            print("{0} ({1})".format(server.ip, ", ".join(infolist)))
+            self.putline(u"{0} ({1})".format(server.ip, u", ".join(infolist)))
 
 
 class ShowServer(Options):
@@ -187,7 +198,7 @@ class ShowServer(Options):
             self.print_serverinfo(robot.servers.get(ip))
 
     def print_line(self, key, val):
-        print("{0:<15}{1}".format(key + ":", val))
+        self.putline(u"{0:<15}{1}".format(key + u":", val))
 
     def print_serverinfo(self, server):
         info = [
@@ -211,18 +222,18 @@ class ShowServer(Options):
             if ip.rdns.ptr is None:
                 addr = ip.ip
             else:
-                addr = "{0} (rPTR: {1})".format(ip.ip, ip.rdns.ptr)
-            self.print_line("IP address", addr)
+                addr = u"{0} (rPTR: {1})".format(ip.ip, ip.rdns.ptr)
+            self.print_line(u"IP address", addr)
 
         for net in server.subnets:
-            addrtype = "IPv6" if net.is_ipv6 else "IPv4"
-            addr = "{0}/{1} ({2})".format(net.net_ip, net.mask, addrtype)
-            self.print_line("Subnet", addr)
-            self.print_line("Gateway", net.gateway)
+            addrtype = u"IPv6" if net.is_ipv6 else u"IPv4"
+            addr = u"{0}/{1} ({2})".format(net.net_ip, net.mask, addrtype)
+            self.print_line(u"Subnet", addr)
+            self.print_line(u"Gateway", net.gateway)
 
         for rdns in server.rdns:
-            rptr = "{0} -> {1}".format(rdns.ip, rdns.ptr)
-            self.print_line("Reverse PTR", rptr)
+            rptr = u"{0} -> {1}".format(rdns.ip, rdns.ptr)
+            self.print_line(u"Reverse PTR", rptr)
 
 
 class ReverseDNS(Options):
