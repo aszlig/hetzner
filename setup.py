@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='hetzner',
-      version='0.7.0',
+      version='0.7.1',
       description='High level access to the Hetzner robot',
       url='https://github.com/RedMoonStudios/hetzner',
       author='aszlig',
