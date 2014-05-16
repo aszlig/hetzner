@@ -444,7 +444,8 @@ class Server(object):
 
         for mode in tries:
             print("Rebooting mode: {0}".format(mode))
-            self.reboot(mode)
+            if not self.reboot(mode):
+                continue
 
             sys.stdout.write("Waiting for the server to come back")
             sys.stdout.flush()
@@ -488,6 +489,7 @@ class Server(object):
                     self.shell(None, cmdline="reboot")
                 except Exception, ex:
                     print ex
+                    return False
 
                 return True
             elif mode == "rac":
