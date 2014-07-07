@@ -7,6 +7,7 @@ from distutils.core import setup, Command
 PYTHON_MODULES = [
     'hetzner',
     'hetzner.rdns',
+    'hetzner.reset',
     'hetzner.robot',
     'hetzner.server',
     'hetzner.util',
