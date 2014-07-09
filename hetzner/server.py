@@ -11,9 +11,10 @@ from tempfile import mkdtemp
 from datetime import datetime
 from urllib import urlencode
 
-from hetzner import util, RobotError, ManualReboot, ConnectError
+from hetzner import RobotError, ManualReboot, ConnectError
 from hetzner.rdns import ReverseDNS, ReverseDNSManager
 from hetzner.reset import Reset
+from hetzner.util import addr
 
 __all__ = ['AdminAccount', 'IpAddress', 'RescueSystem', 'Server', 'Subnet',
            'IpManager', 'SubnetManager']
@@ -313,9 +314,9 @@ class Subnet(object):
         self.traffic_daily = data['traffic_daily']
         self.traffic_monthly = data['traffic_monthly']
 
-        self.is_ipv6, self.numeric_net_ip = util.parse_ipaddr(self.net_ip)
-        self.numeric_gateway = util.parse_ipaddr(self.gateway, self.is_ipv6)
-        getrange = util.get_ipv6_range if self.is_ipv6 else util.get_ipv4_range
+        self.is_ipv6, self.numeric_net_ip = addr.parse_ipaddr(self.net_ip)
+        self.numeric_gateway = addr.parse_ipaddr(self.gateway, self.is_ipv6)
+        getrange = addr.get_ipv6_range if self.is_ipv6 else addr.get_ipv4_range
         self.numeric_range = getrange(self.numeric_net_ip, self.mask)
 
     def get_ip_range(self):

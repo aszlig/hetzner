@@ -11,6 +11,7 @@ PYTHON_MODULES = [
     'hetzner.robot',
     'hetzner.server',
     'hetzner.util',
+    'hetzner.util.addr',
 ]
 
 
