@@ -12,6 +12,7 @@ PYTHON_MODULES = [
     'hetzner.server',
     'hetzner.util',
     'hetzner.util.addr',
+    'hetzner.util.http',
 ]
 
 
