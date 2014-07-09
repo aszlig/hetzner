@@ -190,7 +190,7 @@ class RobotConnection(object):
         response = self._request(method, path, data, headers)
         raw_data = response.read()
         if len(raw_data) == 0 and not allow_empty:
-            msg = "Empty resonse, status {0}."
+            msg = "Empty response, status {0}."
             raise RobotError(msg.format(response.status), response.status)
         elif not allow_empty:
             try:
