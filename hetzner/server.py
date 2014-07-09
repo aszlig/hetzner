@@ -381,6 +381,7 @@ class Server(object):
         self.subnets = SubnetManager(self.conn, self.ip)
         self.rdns = ReverseDNSManager(self.conn, self.ip)
         self._admin_account = None
+        self.logger = logging.getLogger("Server #{0}".format(self.number))
 
     @property
     def admin(self):
@@ -458,23 +459,25 @@ class Server(object):
                 tries = ['soft', 'hard']
 
         for mode in tries:
-            logging.info("Tring to reboot using the %r method.", mode)
+            self.logger.info("Tring to reboot using the %r method.", mode)
             self.reboot(mode)
 
             start_time = time.time()
-            logging.info("Waiting for machine to become available.")
+            self.logger.info("Waiting for machine to become available.")
             while True:
                 current_time = time.time()
                 if current_time > start_time + patience:
-                    logging.info("Machine didn't come up after %d seconds.",
-                                 patience)
+                    self.logger.info(
+                        "Machine didn't come up after %d seconds.",
+                        patience
+                    )
                     break
 
                 is_up = self.check_ssh()
                 time.sleep(1)
 
                 if is_up and is_down:
-                    logging.info("Machine just became available.")
+                    self.logger.info("Machine just became available.")
                     return
                 elif not is_down:
                     is_down = not is_up
