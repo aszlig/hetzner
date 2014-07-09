@@ -3,6 +3,9 @@ import sys
 import locale
 import warnings
 
+import logging
+logging.basicConfig(format='%(name)s: %(message)s', level=logging.INFO)
+
 from os.path import expanduser
 from optparse import OptionParser, make_option
 from ConfigParser import RawConfigParser, Error

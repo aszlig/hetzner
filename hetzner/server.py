@@ -6,6 +6,7 @@ import socket
 import string
 import subprocess
 import warnings
+import logging
 
 from tempfile import mkdtemp
 from datetime import datetime
@@ -383,6 +384,7 @@ class Server(object):
         self.subnets = SubnetManager(self.conn, self.ip)
         self.rdns = ReverseDNSManager(self.conn, self.ip)
         self._admin_account = None
+        self.logger = logging.getLogger("Server #{0}".format(self.number))
 
     @property
     def admin(self):

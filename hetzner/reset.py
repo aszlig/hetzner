@@ -46,17 +46,26 @@ class Reset(object):
                 tries = ['soft', 'hard']
 
         for mode in tries:
+            self.server.logger.info("Tring to reboot using the %r method.",
+                                    mode)
             self.reboot(mode)
 
-            now = time.time()
+            start_time = time.time()
+            self.server.logger.info("Waiting for machine to become available.")
             while True:
-                if time.time() > now + patience:
+                current_time = time.time()
+                if current_time > start_time + patience:
+                    self.server.logger.info(
+                        "Machine didn't come up after %d seconds.",
+                        patience
+                    )
                     break
 
                 is_up = self.check_ssh()
                 time.sleep(1)
 
                 if is_up and is_down:
+                    self.server.logger.info("Machine just became available.")
                     return
                 elif not is_down:
                     is_down = not is_up
