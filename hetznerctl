@@ -314,6 +314,9 @@ def main():
         subparser.set_defaults(cmdclass=cmd)
 
     args = parser.parse_args()
+    if getattr(args, 'cmdclass', None) is None:
+        parser.print_help()
+        parser.exit(1)
     subcommand = args.cmdclass(args.configfile)
 
     if subcommand.requires_robot:
