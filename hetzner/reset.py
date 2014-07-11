@@ -94,7 +94,7 @@ class Reset(object):
             baseurl = '/server/vserverCommand/id/{0}/command/reset'
             url = baseurl.format(self.server.number)
             response = self.conn.scraper.request(url, method='POST')
-            assert "msgbox_success" in response.read()
+            assert "msgbox_success" in response.read().decode('utf-8')
             return response
 
         modes = {

@@ -1,8 +1,12 @@
 import ssl
 import socket
 
-from httplib import HTTPSConnection
 from tempfile import NamedTemporaryFile
+
+try:
+    from httplib import HTTPSConnection
+except ImportError:
+    from http.client import HTTPSConnection
 
 
 class ValidatedHTTPSConnection(HTTPSConnection):
@@ -32,8 +36,9 @@ class ValidatedHTTPSConnection(HTTPSConnection):
                                         self.timeout,
                                         self.source_address)
         ca_certs = NamedTemporaryFile()
-        ca_certs.write('\n'.join(map(str.strip,
-                                     self.CA_ROOT_CERT.splitlines())))
+        ca_certs.write('\n'.join(
+            map(str.strip, self.CA_ROOT_CERT.splitlines())
+        ).encode('ascii'))
         ca_certs.flush()
         self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
                                     cert_reqs=ssl.CERT_REQUIRED,

@@ -3,8 +3,16 @@ import json
 import logging
 
 from base64 import b64encode
-from urllib import urlencode
-from httplib import BadStatusLine, ResponseNotReady
+
+try:
+    from httplib import BadStatusLine, ResponseNotReady
+except ImportError:
+    from http.client import BadStatusLine, ResponseNotReady
+
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
 
 from hetzner import WebRobotError, RobotError
 from hetzner.server import Server
@@ -176,9 +184,9 @@ class RobotConnection(object):
         if data is not None:
             data = urlencode(data)
 
-        auth = 'Basic {0}'.format(
-            b64encode("{0}:{1}".format(self.user, self.passwd))
-        )
+        auth = 'Basic {0}'.format(b64encode(
+            "{0}:{1}".format(self.user, self.passwd).encode('ascii')
+        ).decode('ascii'))
 
         headers = {'Authorization': auth}
 
@@ -188,7 +196,7 @@ class RobotConnection(object):
         logging.debug("Sending %s request to Robot at %s with data %r.",
                       method, path, data)
         response = self._request(method, path, data, headers)
-        raw_data = response.read()
+        raw_data = response.read().decode('utf-8')
         if len(raw_data) == 0 and not allow_empty:
             msg = "Empty response, status {0}."
             raise RobotError(msg.format(response.status), response.status)

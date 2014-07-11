@@ -1,4 +1,7 @@
-from urllib import urlencode
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
 
 from hetzner import RobotError
 

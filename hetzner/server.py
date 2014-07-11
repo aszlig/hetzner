@@ -10,7 +10,12 @@ import logging
 
 from tempfile import mkdtemp
 from datetime import datetime
-from urllib import urlencode
+from functools import reduce
+
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
 
 from hetzner import RobotError, ManualReboot, ConnectError
 from hetzner.rdns import ReverseDNS, ReverseDNSManager
@@ -34,10 +39,11 @@ class SSHAskPassHelper(object):
     def __enter__(self):
         self.tempdir = mkdtemp()
         script = os.path.join(self.tempdir, "askpass")
-        fd = os.open(script, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0700)
+        fd = os.open(script, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o700)
         self.script = script
         esc_passwd = self.passwd.replace("'", r"'\''")
-        os.write(fd, "#!/bin/sh\necho -n '{0}'".format(esc_passwd))
+        askpass = "#!/bin/sh\necho -n '{0}'".format(esc_passwd).encode('ascii')
+        os.write(fd, askpass)
         os.close(fd)
         return script
 
@@ -173,7 +179,7 @@ class AdminAccount(object):
         path = '/server/admin/id/{0}'.format(self._serverid)
         response = self._scraper.request(path)
         assert response.status == 200
-        match = login_re.search(response.read())
+        match = login_re.search(response.read().decode('utf-8'))
         if match is None:
             self.exists = False
         else:
@@ -182,7 +188,7 @@ class AdminAccount(object):
 
     def _genpasswd(self):
         random.seed(os.urandom(512))
-        chars = string.letters + string.digits + "/()-=+_,;.^~#*@"
+        chars = string.ascii_letters + string.digits + "/()-=+_,;.^~#*@"
         length = random.randint(20, 40)
         return ''.join(random.choice(chars) for i in range(length))
 
@@ -203,7 +209,7 @@ class AdminAccount(object):
             'id': self._serverid
         }
         response = self._scraper.request('/server/adminUpdate', data)
-        assert "msgbox_success" in response.read()
+        assert "msgbox_success" in response.read().decode('utf-8')
         self.passwd = passwd
         return self.login, self.passwd
 
@@ -214,7 +220,8 @@ class AdminAccount(object):
         if not self.exists:
             return
         path = '/server/adminDelete/id/{0}'.format(self._serverid)
-        assert "msgbox_success" in self._scraper.request(path).read()
+        assert "msgbox_success" in \
+            self._scraper.request(path).read().decode('utf-8')
         self.update_info()
 
     def __repr__(self):
