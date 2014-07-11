@@ -232,6 +232,37 @@ class ReverseDNS(SubCommand):
                 self.putline("{0} -> {1}".format(rdns.ip, rdns.ptr))
 
 
+class Admin(SubCommand):
+    command = 'admin'
+    description = "Create/delete dedicated admin accounts"
+    option_list = [
+        make_option('-C', '--create', dest='addadmin', action='store_true',
+                    default=False, help="Create admin account"),
+        make_option('-d', '--delete', dest='deladmin', action='store_true',
+                    default=False, help="Delete admin account"),
+        make_option('-p', '--password', dest='admpasswd', metavar='PASSWORD',
+                    help="Use this password instead of generating one"),
+        make_option('ip', metavar='IP', nargs='+', default=None,
+                    help="IP address of the server"),
+    ]
+
+    def execute(self, robot, parser, args):
+        for ip in args.ip:
+            server = robot.servers.get(ip)
+            if args.addadmin:
+                login, passwd = server.admin.create(passwd=args.admpasswd)
+                msg = "{0}: {1} -> {2}".format(server.ip, login, passwd)
+                self.putline(msg)
+            elif args.deladmin:
+                server.admin.delete()
+            else:
+                if server.admin.exists:
+                    msg = "{0}: {1}".format(server.ip, server.admin.login)
+                else:
+                    msg = "No admin account for {0}.".format(server.ip)
+                self.putline(msg)
+
+
 class Config(SubCommand):
     command = 'config'
     description = "Get or set options"
@@ -280,7 +311,8 @@ def main():
         SetName,
         ListServers,
         ShowServer,
-        ReverseDNS
+        ReverseDNS,
+        Admin,
     ]
 
     common_parser = argparse.ArgumentParser(
