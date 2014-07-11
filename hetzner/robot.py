@@ -36,6 +36,7 @@ class RobotWebInterface(object):
         self.user = user
         self.passwd = passwd
         self.logged_in = False
+        self.logger = logging.getLogger("Robot scraper for {0}".format(user))
 
     def update_session(self, response):
         """
@@ -95,8 +96,8 @@ class RobotWebInterface(object):
                                 " page".format(response.status))
 
         data = {'user': self.user, 'password': self.passwd}
-        logging.debug("Logging in to Robot web frontend with user %s.",
-                      self.user)
+        self.logger.debug("Logging in to Robot web frontend with user %s.",
+                          self.user)
         response = self.request('/login/check', data, xhr=False, log=False)
 
         if response.status != 302 or response.getheader('Location') is None:
@@ -135,23 +136,24 @@ class RobotWebInterface(object):
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         if log:
-            logging.debug("Sending %s request to Robot web frontend "
-                          "at %s with data %r.",
-                          ("XHR " if xhr else "") + method, path, encoded)
+            self.logger.debug("Sending %s request to Robot web frontend "
+                              "at %s with data %r.",
+                              ("XHR " if xhr else "") + method, path, encoded)
         self.conn.request(method, path, encoded, headers)
 
         try:
             response = self.conn.getresponse()
         except ResponseNotReady:
-            logging.debug("Connection closed by Robot web frontend, retrying.")
+            self.logger.debug("Connection closed by Robot web frontend,"
+                              " retrying.")
             # Connection closed, so we need to reconnect.
             # FIXME: Try to avoid endless loops here!
             self.connect(force=True)
             return self.request(path, data=data, xhr=xhr, log=log)
 
         if log:
-            logging.debug("Got response from web frontend with status %d.",
-                          response.status)
+            self.logger.debug("Got response from web frontend with status %d.",
+                              response.status)
 
         self.update_session(response)
         return response
@@ -162,6 +164,7 @@ class RobotConnection(object):
         self.user = user
         self.passwd = passwd
         self.conn = ValidatedHTTPSConnection(ROBOT_HOST)
+        self.logger = logging.getLogger("Robot of {0}".format(user))
 
         # Provide this as a way to easily add unsupported API features.
         self.scraper = RobotWebInterface(user, passwd)
@@ -193,8 +196,8 @@ class RobotConnection(object):
         if data is not None:
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-        logging.debug("Sending %s request to Robot at %s with data %r.",
-                      method, path, data)
+        self.logger.debug("Sending %s request to Robot at %s with data %r.",
+                          method, path, data)
         response = self._request(method, path, data, headers)
         raw_data = response.read().decode('utf-8')
         if len(raw_data) == 0 and not allow_empty:
@@ -208,7 +211,7 @@ class RobotConnection(object):
                 raise RobotError(msg.format(response.status, repr(raw_data)))
         else:
             data = None
-        logging.debug("Got response from Robot with status %d and data %r.",
+        self.logger.debug("Got response from Robot with status %d and data %r.",
                       response.status, data)
 
         if 200 <= response.status < 300:
