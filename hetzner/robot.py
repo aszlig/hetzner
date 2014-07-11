@@ -211,8 +211,10 @@ class RobotConnection(object):
                 raise RobotError(msg.format(response.status, repr(raw_data)))
         else:
             data = None
-        self.logger.debug("Got response from Robot with status %d and data %r.",
-                      response.status, data)
+        self.logger.debug(
+            "Got response from Robot with status %d and data %r.",
+            response.status, data
+        )
 
         if 200 <= response.status < 300:
             return data

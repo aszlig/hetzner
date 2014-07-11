@@ -4,6 +4,7 @@ import socket
 
 from hetzner.util.addr import *
 
+
 class UtilAddrTestCase(unittest.TestCase):
     def test_parse_ipv4(self):
         self.assertEqual(parse_ipv4('174.26.72.88'), 2920958040)
