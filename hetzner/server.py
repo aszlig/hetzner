@@ -1,8 +1,6 @@
 import os
 import re
-import time
 import random
-import socket
 import string
 import subprocess
 import warnings
@@ -17,7 +15,7 @@ try:
 except ImportError:
     from urllib.parse import urlencode
 
-from hetzner import RobotError, ManualReboot, ConnectError
+from hetzner import RobotError
 from hetzner.rdns import ReverseDNS, ReverseDNSManager
 from hetzner.reset import Reset
 from hetzner.util import addr
@@ -332,14 +330,14 @@ class Subnet(object):
         Return the smallest and biggest possible IP address of the current
         subnet.
         """
-        convert = util.ipv6_bin2addr if self.is_ipv6 else util.ipv4_bin2addr
+        convert = addr.ipv6_bin2addr if self.is_ipv6 else addr.ipv4_bin2addr
         return convert(self.numeric_range[0]), convert(self.numeric_range[1])
 
     def __contains__(self, addr):
         """
         Check whether a specific IP address is within the current subnet.
         """
-        numeric_addr = util.parse_ipaddr(addr, self.is_ipv6)
+        numeric_addr = addr.parse_ipaddr(addr, self.is_ipv6)
         return self.numeric_range[0] <= numeric_addr <= self.numeric_range[1]
 
     def get_ip(self, addr):

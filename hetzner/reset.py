@@ -1,6 +1,8 @@
 import socket
 import time
 
+from hetzner import ConnectError, ManualReboot
+
 
 class Reset(object):
     def __init__(self, server):
