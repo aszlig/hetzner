@@ -18,7 +18,7 @@ except ImportError:
 from hetzner import RobotError
 from hetzner.rdns import ReverseDNS, ReverseDNSManager
 from hetzner.reset import Reset
-from hetzner.util import addr
+from hetzner.util import addr, scraping
 
 __all__ = ['AdminAccount', 'IpAddress', 'RescueSystem', 'Server', 'Subnet',
            'IpManager', 'SubnetManager']
@@ -199,11 +199,20 @@ class AdminAccount(object):
             path = '/server/adminCreate/id/{0}'.format(self._serverid)
             self._scraper.request(path)
             self.update_info()
+
+        form_path = '/server/admin/id/{0}'.format(self._serverid)
+        form_response = self._scraper.request(form_path, method='POST')
+
+        parser = scraping.CSRFParser('password[_csrf_token]')
+        parser.feed(form_response.read().decode('utf-8'))
+        assert parser.csrf_token is not None
+
         if passwd is None:
             passwd = self._genpasswd()
         data = {
             'password[new_password]': passwd,
             'password[new_password_repeat]': passwd,
+            'password[_csrf_token]': parser.csrf_token,
             'id': self._serverid
         }
         response = self._scraper.request('/server/adminUpdate', data)

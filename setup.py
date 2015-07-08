@@ -13,6 +13,7 @@ PYTHON_MODULES = [
     'hetzner.util',
     'hetzner.util.addr',
     'hetzner.util.http',
+    'hetzner.util.scraping',
     'hetzner.tests',
     'hetzner.tests.test_util_addr',
 ]
