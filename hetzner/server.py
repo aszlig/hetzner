@@ -12,6 +12,26 @@ from urllib import urlencode
 
 from hetzner import RobotError, ManualReboot, ConnectError
 
+try:
+    from HTMLParser import HTMLParser
+except ImportError:
+    from html.parser import HTMLParser
+
+
+class CSRFParser(HTMLParser):
+    def __init__(self, field_name):
+        HTMLParser.__init__(self)
+        self.field_name = field_name
+        self.csrf_token = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag != 'input':
+            return
+        attrdict = dict(attrs)
+        if attrdict.get('name', '') == self.field_name:
+            self.csrf_token = attrdict.get('value', None)
+    handle_startendtag = handle_starttag
+
 
 class SSHAskPassHelper(object):
     """
@@ -182,11 +202,20 @@ class AdminAccount(object):
             path = '/server/adminCreate/id/{0}'.format(self._serverid)
             self._scraper.request(path)
             self.update_info()
+
+        form_path = '/server/admin/id/{0}'.format(self._serverid)
+        form_response = self._scraper.request(form_path, method='POST')
+
+        parser = CSRFParser('password[_csrf_token]')
+        parser.feed(form_response.read().decode('utf-8'))
+        assert parser.csrf_token is not None
+
         if passwd is None:
             passwd = self._genpasswd()
         data = {
             'password[new_password]': passwd,
             'password[new_password_repeat]': passwd,
+            'password[_csrf_token]': parser.csrf_token,
             'id': self._serverid
         }
         response = self._scraper.request('/server/adminUpdate', data)
