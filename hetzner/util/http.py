@@ -1,3 +1,4 @@
+import os
 import ssl
 import socket
 
@@ -11,7 +12,7 @@ except ImportError:
 
 class ValidatedHTTPSConnection(HTTPSConnection):
     # GeoTrust Global CA
-    CA_ROOT_CERT = '''
+    CA_ROOT_CERT_FALLBACK = '''
     -----BEGIN CERTIFICATE-----
     MIIDVDCCAjygAwIBAgIDAjRWMA0GCSqGSIb3DQEBBQUAMEIxCzAJBgNVBAYTAlVTMRYwFAYDVQQ
     KEw1HZW9UcnVzdCBJbmMuMRswGQYDVQQDExJHZW9UcnVzdCBHbG9iYWwgQ0EwHhcNMDIwNTIxMD
@@ -32,16 +33,34 @@ class ValidatedHTTPSConnection(HTTPSConnection):
     -----END CERTIFICATE-----
     '''
 
+    def get_ca_cert_bundle(self):
+        via_env = os.getenv('SSL_CERT_FILE')
+        if via_env is not None and os.path.exists(via_env):
+            return via_env
+        probe_paths = [
+            "/etc/ssl/certs/ca-certificates.crt",
+            "/etc/ssl/certs/ca-bundle.crt",
+            "/etc/pki/tls/certs/ca-bundle.crt",
+        ]
+        for path in probe_paths:
+            if os.path.exists(path):
+                return path
+        return None
+
     def connect(self):
         sock = socket.create_connection((self.host, self.port),
                                         self.timeout,
                                         self.source_address)
-        ca_certs = NamedTemporaryFile()
-        ca_certs.write('\n'.join(
-            map(str.strip, self.CA_ROOT_CERT.splitlines())
-        ).encode('ascii'))
-        ca_certs.flush()
+        bundle = cafile = self.get_ca_cert_bundle()
+        if bundle is None:
+            ca_certs = NamedTemporaryFile()
+            ca_certs.write('\n'.join(
+                map(str.strip, self.CA_ROOT_CERT_FALLBACK.splitlines())
+            ).encode('ascii'))
+            ca_certs.flush()
+            cafile = ca_certs.name
         self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
                                     cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=ca_certs.name)
-        ca_certs.close()
+                                    ca_certs=cafile)
+        if bundle is None:
+            ca_certs.close()
