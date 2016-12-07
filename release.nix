@@ -10,13 +10,13 @@
 let
   inherit (import nixpkgs {}) lib;
 
-  mkPackageSet = pyver: system: let
+  mkPackageSet = system: pyver: let
     pkgs = import nixpkgs { inherit system; };
     pythonPackages = pkgs."${pyver}Packages";
   in {
     hetzner = import ./. { inherit pythonPackages; };
   };
 
-  mkSystems = pyver: lib.genAttrs systems (mkPackageSet pyver);
+  mkSystems = system: lib.genAttrs pythonVersions (mkPackageSet system);
 
-in lib.genAttrs pythonVersions mkSystems
+in lib.genAttrs systems mkSystems
