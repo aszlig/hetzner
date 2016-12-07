@@ -1,4 +1,4 @@
-with import <nixpkgs> {};
+{ pythonPackages ? (import <nixpkgs> {}).pythonPackages }:
 
 pythonPackages.buildPythonPackage rec {
   name = "hetzner-${version}";
