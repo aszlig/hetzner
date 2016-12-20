@@ -10,7 +10,7 @@ from tempfile import mkdtemp
 from datetime import datetime
 from urllib import urlencode
 
-from hetzner import RobotError, ManualReboot, ConnectError
+from hetzner import RobotError, WebRobotError, ManualReboot, ConnectError
 
 try:
     from HTMLParser import HTMLParser
@@ -215,13 +215,26 @@ class AdminAccount(object):
         }
 
         if not self.exists:
+            failmsg = "Unable to create admin account"
             path = '/server/adminCreate/id/{0}'.format(self._serverid)
         else:
+            failmsg = "Unable to update admin account password"
             path = '/server/adminUpdate'
             data['id'] = self._serverid
 
         response = self._scraper.request(path, data)
-        assert "msgbox_success" in response.read()
+        data = response.read()
+        if "msgbox_success" not in data:
+            ul_re = re.compile(r'<ul\s+class="error_list">(.*?)</ul>',
+                               re.DOTALL)
+            li_re = re.compile(r'<li>\s*([^<]*?)\s*</li>')
+            ul_match = ul_re.search(data)
+            if ul_match is not None:
+                errors = [error.group(1)
+                          for error in li_re.finditer(ul_match.group(0))]
+                msg = failmsg + ': ' + ', '.join(errors)
+                raise WebRobotError(msg)
+            raise WebRobotError(failmsg)
         self.update_info()
         self.passwd = passwd
         return self.login, self.passwd
