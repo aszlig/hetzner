@@ -195,10 +195,8 @@ class AdminAccount(object):
         Create a new admin account if missing. If passwd is supplied, use it
         instead of generating a random one.
         """
-        if not self.exists:
-            path = '/server/adminCreate/id/{0}'.format(self._serverid)
-            self._scraper.request(path)
-            self.update_info()
+        if passwd is None:
+            passwd = self._genpasswd()
 
         form_path = '/server/admin/id/{0}'.format(self._serverid)
         form_response = self._scraper.request(form_path, method='POST')
@@ -207,16 +205,21 @@ class AdminAccount(object):
         parser.feed(form_response.read().decode('utf-8'))
         assert parser.csrf_token is not None
 
-        if passwd is None:
-            passwd = self._genpasswd()
         data = {
             'password[new_password]': passwd,
             'password[new_password_repeat]': passwd,
             'password[_csrf_token]': parser.csrf_token,
-            'id': self._serverid
         }
-        response = self._scraper.request('/server/adminUpdate', data)
+
+        if not self.exists:
+            path = '/server/adminCreate/id/{0}'.format(self._serverid)
+        else:
+            path = '/server/adminUpdate'
+            data['id'] = self._serverid
+
+        response = self._scraper.request(path, data)
         assert "msgbox_success" in response.read().decode('utf-8')
+        self.update_info()
         self.passwd = passwd
         return self.login, self.passwd
 
