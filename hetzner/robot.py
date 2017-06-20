@@ -86,7 +86,7 @@ class RobotWebInterface(object):
         if self.user.startswith("#ws+"):
             raise WebRobotError("The user {0} is a dedicated web service user "
                                 "and cannot be used for scraping the web user "
-                                "interface.")
+                                "interface.".format(self.user))
 
         # This is primarily for getting a first session cookie.
         response = self.request('/login', xhr=False)
