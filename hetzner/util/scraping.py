@@ -3,6 +3,7 @@ try:
 except ImportError:
     from html.parser import HTMLParser
 
+
 class CSRFParser(HTMLParser):
     def __init__(self, field_name):
         HTMLParser.__init__(self)
