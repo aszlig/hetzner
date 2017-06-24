@@ -1,7 +1,9 @@
 class RobotError(Exception):
     def __init__(self, message, status=None):
-        formattedMessage = message if status is None else "{0} ({1})".format(message, status)
-        super(Exception, self).__init__(formattedMessage)
+        if status is None:
+            self.message = message
+        else:
+            self.message = "{0} ({1})".format(message, status)
         self.status = status
 
 
