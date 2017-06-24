@@ -235,10 +235,17 @@ class RobotConnection(object):
                     err += ", fields: {0}".format(', '.join(fields))
                 raise RobotError(err, response.status)
 
-    get = lambda s, p: s.request('GET', p)
-    post = lambda s, p, d: s.request('POST', p, d)
-    put = lambda s, p, d: s.request('PUT', p, d)
-    delete = lambda s, p, d=None: s.request('DELETE', p, d, allow_empty=True)
+    def get(self, path):
+        return self.request('GET', path)
+
+    def post(self, path, data):
+        return self.request('POST', path, data)
+
+    def put(self, path, data):
+        return self.request('PUT', path, data)
+
+    def delete(self, path, data=None):
+        return self.request('DELETE', path, data, allow_empty=True)
 
 
 class ServerManager(object):
