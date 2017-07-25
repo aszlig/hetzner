@@ -1,10 +1,8 @@
 class RobotError(Exception):
     def __init__(self, message, status=None):
-        if status is None:
-            self.message = message
-        else:
-            self.message = "{0} ({1})".format(message, status)
-        self.status = status
+        if status is not None:
+            message = "{0} ({1})".format(message, status)
+        super(RobotError, self).__init__(message)
 
 
 class ManualReboot(Exception):
