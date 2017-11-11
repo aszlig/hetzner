@@ -16,6 +16,7 @@ except ImportError:
 from hetzner import WebRobotError, RobotError
 from hetzner.server import Server
 from hetzner.rdns import ReverseDNSManager
+from hetzner.failover import FailoverManager
 from hetzner.util.http import ValidatedHTTPSConnection
 
 ROBOT_HOST = "robot-ws.your-server.de"
@@ -267,3 +268,4 @@ class Robot(object):
         self.conn = RobotConnection(user, passwd)
         self.servers = ServerManager(self.conn)
         self.rdns = ReverseDNSManager(self.conn)
+        self.failover = FailoverManager(self.conn, self.servers)

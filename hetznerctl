@@ -231,6 +231,40 @@ class ReverseDNS(SubCommand):
             else:
                 self.putline("{0} -> {1}".format(rdns.ip, rdns.ptr))
 
+class Failover(SubCommand):
+    command = 'failover'
+    description = 'List and set failover IP addresses'
+
+    option_list = [
+        make_option('-s', '--set', dest='setfailover', action='store_true',
+                    default=False, help="Assign failover IP address to server"),
+        make_option('ip', nargs='?', default=None,
+                    help="Failover IP address to assign"),
+        make_option('destination', nargs='?', default=None,
+                    help="IP address of new failover destination")
+    ]
+
+    def execute(self, robot, parser, args):
+        if args.setfailover:
+            errs = []
+            if not args.ip:
+                errs.append("Error: you need to set the failover IP you want to assign. Option 'ip'")
+            if not args.destination:
+                errs.append("Error: you need to set the new destination of the failover IP. Option 'dest'")
+            if len(errs) > 0:
+                for err in errs:
+                    self.putline(err)
+            else:
+                failover = robot.failover.set(args.ip, args.destination)
+                self.putline("Failover IP successfully assigned to new destination")
+                self.putline(str(failover))
+        else:
+            failovers = robot.failover.list()
+            if len(failovers) > 0:
+                self.putline("Found %s failover IPs" % len(failovers))
+            for failover in failovers.values():
+                self.putline(str(failover))
+
 
 class Admin(SubCommand):
     command = 'admin'
@@ -313,6 +347,7 @@ def main():
         ShowServer,
         ReverseDNS,
         Admin,
+        Failover,
     ]
 
     common_parser = argparse.ArgumentParser(
