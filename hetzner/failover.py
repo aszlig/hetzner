@@ -20,14 +20,19 @@ class Failover(object):
 
 
 class FailoverManager(object):
-
     def __init__(self, conn, servers):
         self.conn = conn
         self.servers = servers
 
     def list(self):
         failovers = {}
-        ips = self.conn.get('/failover')
+        try:
+            ips = self.conn.get('/failover')
+        except RobotError as err:
+            if err.status == 404:
+                return failovers
+            else:
+                raise
         for ip in ips:
             failover = Failover(ip.get('failover'))
             failovers[failover.ip] = failover
