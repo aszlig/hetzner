@@ -29,6 +29,7 @@ class RunTests(Command):
         result = TextTestRunner(verbosity=1).run(tests)
         sys.exit(not result.wasSuccessful())
 
+
 setup(name='hetzner',
       version='0.7.1',
       description='High level access to the Hetzner robot',
