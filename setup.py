@@ -6,6 +6,7 @@ from unittest import TextTestRunner, TestLoader
 
 PYTHON_MODULES = [
     'hetzner',
+    'hetzner.failover',
     'hetzner.rdns',
     'hetzner.reset',
     'hetzner.robot',
