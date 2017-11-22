@@ -21,6 +21,7 @@ from hetzner.util.http import ValidatedHTTPSConnection
 
 ROBOT_HOST = "robot-ws.your-server.de"
 ROBOT_WEBHOST = "robot.your-server.de"
+ROBOT_LOGINHOST = "accounts.hetzner.com"
 
 __all__ = ['Robot', 'RobotConnection', 'RobotWebInterface', 'ServerManager']
 
@@ -38,17 +39,35 @@ class RobotWebInterface(object):
         self.logged_in = False
         self.logger = logging.getLogger("Robot scraper for {0}".format(user))
 
+    def _parse_cookies(self, response):
+        """
+        Return a dictionary consisting of the cookies from the given response.
+        """
+        result = {}
+        cookies = response.getheader('set-cookie')
+        if cookies is None:
+            return result
+
+        # Not very accurate but sufficent enough for our use case.
+        for cookieval in cookies.split(','):
+            cookieattrs = cookieval.strip().split(';')
+            if len(cookieattrs) <= 1:
+                continue
+            cookie = cookieattrs[0].strip().split('=', 1)
+            if len(cookie) != 2:
+                continue
+            result[cookie[0]] = cookie[1]
+
+        return result
+
     def update_session(self, response):
         """
         Parses the session cookie from the given response instance and updates
         self.session_cookie accordingly if a session cookie was recognized.
         """
-        for key, value in response.getheaders():
-            if key.lower() != 'set-cookie':
-                continue
-            if not value.startswith("robot="):
-                continue
-            self.session_cookie = value.split(';', 1)[0]
+        session = self._parse_cookies(response).get('robot')
+        if session is not None:
+            self.session_cookie = "robot=" + session
 
     def connect(self, force=False):
         """
@@ -89,19 +108,116 @@ class RobotWebInterface(object):
                                 "and cannot be used for scraping the web user "
                                 "interface.".format(self.user))
 
+        # We need to first visit the Robot so that we later get an OAuth token
+        # for the Robot from the authentication site.
+        self.logger.debug("Visiting Robot web frontend for the first time.")
+        auth_url = self.request('/', xhr=False).getheader('location')
+
+        if not auth_url.startswith('https://' + ROBOT_LOGINHOST + '/'):
+            msg = "https://{0}/ does not redirect to https://{1}/ " \
+                  "but instead redirects to: {2}"
+            raise WebRobotError(msg.format(ROBOT_WEBHOST, ROBOT_LOGINHOST,
+                                           auth_url))
+
+        self.logger.debug("Following authentication redirect to %r.", auth_url)
+
         # This is primarily for getting a first session cookie.
-        response = self.request('/login', xhr=False)
+        login_conn = ValidatedHTTPSConnection(ROBOT_LOGINHOST)
+        login_conn.request('GET', auth_url[len(ROBOT_LOGINHOST) + 8:], None)
+
+        response = login_conn.getresponse()
+        if response.status != 302:
+            raise WebRobotError("Invalid status code {0} while visiting auth"
+                                " URL".format(response.status))
+
+        cookies = self._parse_cookies(response)
+        if "PHPSESSID" not in cookies:
+            msg = "Auth site didn't respond with a session cookie."
+            raise WebRobotError(msg)
+
+        self.logger.debug("Session ID for auth site is %r.",
+                          cookies['PHPSESSID'])
+
+        # Make sure that we always send the auth site's session ID in
+        # subsequent requests.
+        cookieval = '; '.join([k + '=' + v for k, v in cookies.items()])
+        headers = {'Cookie': cookieval}
+
+        self.logger.debug("Visiting login page at https://%s/login.",
+                          ROBOT_LOGINHOST)
+
+        # Note that the auth site doesn't seem to support keep-alives, so we
+        # need to reconnect here.
+        login_conn = ValidatedHTTPSConnection(ROBOT_LOGINHOST)
+        login_conn.request('GET', "/login", None, headers)
+
+        response = login_conn.getresponse()
         if response.status != 200:
             raise WebRobotError("Invalid status code {0} while visiting login"
                                 " page".format(response.status))
 
-        data = {'user': self.user, 'password': self.passwd}
-        self.logger.debug("Logging in to Robot web frontend with user %s.",
-                          self.user)
-        response = self.request('/login/check', data, xhr=False, log=False)
+        data = urlencode({'_username': self.user, '_password': self.passwd})
+        self.logger.debug("Logging in to auth site with user %s.", self.user)
 
-        if response.status != 302 or response.getheader('Location') is None:
+        # Again, we need to reconnect here.
+        login_conn = ValidatedHTTPSConnection(ROBOT_LOGINHOST)
+        post_headers = headers.copy()
+        post_headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        login_conn.request('POST', '/login_check', data, post_headers)
+        response = login_conn.getresponse()
+
+        # Here, if the authentication is successful another session is started
+        # and we get a new session ID.
+        cookies = self._parse_cookies(response)
+        if "PHPSESSID" not in cookies:
             raise WebRobotError("Login to robot web interface failed.")
+        self.logger.debug("New session ID for auth site after login is %r.",
+                          cookies['PHPSESSID'])
+        cookieval = '; '.join([k + '=' + v for k, v in cookies.items()])
+        headers['Cookie'] = cookieval
+
+        # This should be the actual OAuth authorization URL.
+        location = response.getheader('Location')
+
+        if response.status != 302 or location is None:
+            raise WebRobotError("Unable to get OAuth authorization URL.")
+
+        if not location.startswith('https://' + ROBOT_LOGINHOST + '/'):
+            msg = "https://{0}/ does not redirect to https://{1}/ " \
+                  "but instead redirects to: {2}"
+            raise WebRobotError(msg.format(ROBOT_LOGINHOST, ROBOT_LOGINHOST,
+                                           location))
+
+        self.logger.debug("Got redirected, visiting %r.", location)
+
+        login_conn = ValidatedHTTPSConnection(ROBOT_LOGINHOST)
+        login_conn.request('GET', location[len(ROBOT_LOGINHOST) + 8:], None,
+                           headers)
+        response = login_conn.getresponse()
+
+        # We now should get an URL back to the Robot web interface.
+        location = response.getheader('Location')
+        if response.status != 302 or location is None:
+            raise WebRobotError("Failed to get OAuth URL for Robot.")
+        if not location.startswith('https://' + ROBOT_WEBHOST + '/'):
+            msg = "https://{0}/ does not redirect to https://{1}/ " \
+                  "but instead redirects to: {2}"
+            raise WebRobotError(msg.format(ROBOT_LOGINHOST, ROBOT_WEBHOST,
+                                           auth_url))
+
+        self.logger.debug("Going back to Robot web interface via %r.",
+                          location)
+
+        # Reconnect to Robot with the OAuth token.
+        self.connect(force=True)
+        response = self.request(location[len(ROBOT_WEBHOST) + 8:], xhr=False)
+
+        if response.status != 302:
+            raise WebRobotError("Status after providing OAuth token should be"
+                                " 302 and not {0}".format(response.status))
+
+        if response.getheader('location') != 'https://' + ROBOT_WEBHOST + '/':
+            raise WebRobotError("Robot login with OAuth token has failed.")
 
         self.logged_in = True
 
