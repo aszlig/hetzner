@@ -4,21 +4,23 @@ import locale
 import warnings
 import argparse
 
-import logging
-logging.basicConfig(format='%(name)s: %(message)s', level=logging.INFO)
-
 from os.path import expanduser
+
+from hetzner.robot import Robot
+
+import logging
 
 try:
     from ConfigParser import RawConfigParser
 except ImportError:
     from configparser import RawConfigParser
 
-from hetzner.robot import Robot
+logging.basicConfig(format='%(name)s: %(message)s', level=logging.INFO)
 
 
 def make_option(*args, **kwargs):
     return (args, kwargs)
+
 
 GLOBAL_OPTIONS = [
     make_option('-c', '--config', dest='configfile',
@@ -231,13 +233,15 @@ class ReverseDNS(SubCommand):
             else:
                 self.putline("{0} -> {1}".format(rdns.ip, rdns.ptr))
 
+
 class Failover(SubCommand):
     command = 'failover'
     description = 'List and set failover IP addresses'
 
     option_list = [
         make_option('-s', '--set', dest='setfailover', action='store_true',
-                    default=False, help="Assign failover IP address to server"),
+                    default=False,
+                    help="Assign failover IP address to server"),
         make_option('ip', nargs='?', default=None,
                     help="Failover IP address to assign"),
         make_option('destination', nargs='?', default=None,
@@ -248,15 +252,18 @@ class Failover(SubCommand):
         if args.setfailover:
             errs = []
             if not args.ip:
-                errs.append("Error: you need to set the failover IP you want to assign. Option 'ip'")
+                errs.append("Error: you need to set the failover IP you"
+                            " want to assign. Option 'ip'")
             if not args.destination:
-                errs.append("Error: you need to set the new destination of the failover IP. Option 'dest'")
+                errs.append("Error: you need to set the new destination of"
+                            " the failover IP. Option 'dest'")
             if len(errs) > 0:
                 for err in errs:
                     self.putline(err)
             else:
                 failover = robot.failover.set(args.ip, args.destination)
-                self.putline("Failover IP successfully assigned to new destination")
+                self.putline("Failover IP successfully assigned to new"
+                             " destination")
                 self.putline(str(failover))
         else:
             failovers = robot.failover.list()
@@ -406,6 +413,7 @@ def main():
     else:
         robot = None
     subcommand.execute(robot, parser, args)
+
 
 if __name__ == '__main__':
     main()
