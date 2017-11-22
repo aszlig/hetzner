@@ -131,7 +131,7 @@ class RescueSystem(object):
         """
         msg = ("The RescueSystem.shell() method will be removed from the API"
                " in version 1.0.0, please do not use it! See"
-               " https://github.com/RedMoonStudios/hetzner/issues/13"
+               " https://github.com/aszlig/hetzner/issues/13"
                " for details.")
         warnings.warn(msg, FutureWarning)
         self.observed_activate(*args, **kwargs)
