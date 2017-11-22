@@ -2,6 +2,8 @@
 
 pythonPackages.buildPythonPackage rec {
   name = "hetzner-${version}";
-  version = "0.7.1";
+  version = let
+    matchVersion = builtins.match ".*version=[\"']([^\"']+)[\"'].*";
+  in builtins.head (matchVersion (builtins.readFile ./setup.py));
   src = ./.;
 }
