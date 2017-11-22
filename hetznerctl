@@ -15,18 +15,9 @@ try:
 except ImportError:
     from configparser import RawConfigParser
 
-logging.basicConfig(format='%(name)s: %(message)s', level=logging.INFO)
-
 
 def make_option(*args, **kwargs):
     return (args, kwargs)
-
-
-GLOBAL_OPTIONS = [
-    make_option('-c', '--config', dest='configfile',
-                default='~/.hetznerrc',
-                help="The location of the configuration file"),
-]
 
 
 class SubCommand(object):
@@ -365,6 +356,8 @@ def main():
     global_options.add_argument('-c', '--config', dest='configfile',
                                 default='~/.hetznerrc', type=expanduser,
                                 help="The location of the configuration file")
+    global_options.add_argument('--debug', action='store_true',
+                                help="Show debug output.")
 
     parser = argparse.ArgumentParser(
         description="Hetzner Robot commandline interface",
@@ -392,6 +385,10 @@ def main():
         subparser.set_defaults(cmdclass=cmd)
 
     args = parser.parse_args()
+
+    logging.basicConfig(format='%(name)s: %(message)s',
+                        level=logging.DEBUG if args.debug else logging.INFO)
+
     if getattr(args, 'cmdclass', None) is None:
         parser.print_help()
         parser.exit(1)
