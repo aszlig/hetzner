@@ -260,8 +260,9 @@ class Failover(SubCommand):
             msgs.extend(robot.failover.monitor())
         else:
             msgs = robot.failover.list()
-        for msg in msgs.values():
-            self.putline(str(msg))
+        if len(msgs) > 0:
+            for msg in msgs.values():
+                self.putline(str(msg))
 
 
 class Admin(SubCommand):

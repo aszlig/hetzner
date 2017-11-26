@@ -62,14 +62,22 @@ class FailoverManager(object):
                                 % ip, {'active_server_ip': new_destination})
         return Failover(result.get('failover'))
 
-
     def monitor(self):
         """Check if container with failover IP is running on host
            and if IP is not mapped to host change settings
         """
         msgs = []
-        ips = self._get_active_ips()
-        print(ips)
+        failovers = self.list()
+        if len(failovers) > 0:
+            ips = self._get_active_ips()
+            host_ip = self._get_host_ip()
+            for failover_ip, failover in failovers.items():
+                if failover_ip in ips and failover.active_server_ip != host_ip:
+                    new_failover = self.set(failover_ip, host_ip)
+                    if new_failover:
+                        msgs.append("Failover IP successfully assigned to new"
+                                    " destination")
+                        msgs.append(str(failover))
         return msgs
 
     def _get_active_ips(self):
@@ -85,4 +93,14 @@ class FailoverManager(object):
              for line in out.split('\n')
              if re.search(r'\d+\.\d+\.\d+\.\d', line)]
             return ips
+
+    def _get_host_ip(self):
+        try:
+            host_ip = subprocess.check_output(["hostname", "--ip-address"])
+        except subprocess.CalledProcessError as e:
+            raise RobotError(str(e))
+        except Exception as e:
+            raise RobotError(str(e))
+        else:
+            return host_ip.strip()
 
