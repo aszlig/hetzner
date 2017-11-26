@@ -1,3 +1,6 @@
+import re
+import subprocess
+
 from hetzner import RobotError
 
 __all__ = ['Failover', 'FailoverManager']
@@ -58,3 +61,28 @@ class FailoverManager(object):
         result = self.conn.post('/failover/%s'
                                 % ip, {'active_server_ip': new_destination})
         return Failover(result.get('failover'))
+
+
+    def monitor(self):
+        """Check if container with failover IP is running on host
+           and if IP is not mapped to host change settings
+        """
+        msgs = []
+        ips = self._get_active_ips()
+        print(ips)
+        return msgs
+
+    def _get_active_ips(self):
+        ips = []
+        try:
+            out = subprocess.check_output(["lxc-ls", "--active", "-fF", "IPV4"])
+        except subprocess.CalledProcessError as e:
+            raise RobotError(str(e))
+        except Exception as e:
+            raise RobotError(str(e))
+        else:
+            [ips.extend([ip.strip() for ip in line.strip().split(',')])
+             for line in out.split('\n')
+             if re.search(r'\d+\.\d+\.\d+\.\d', line)]
+            return ips
+
