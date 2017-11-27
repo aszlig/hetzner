@@ -261,7 +261,7 @@ class Failover(SubCommand):
         else:
             msgs = robot.failover.list()
         if len(msgs) > 0:
-            for msg in msgs.values():
+            for msg in msgs:
                 self.putline(str(msg))
 
 
