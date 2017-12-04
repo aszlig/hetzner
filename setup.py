@@ -32,7 +32,7 @@ class RunTests(Command):
 
 
 setup(name='hetzner',
-      version='0.7.1',
+      version='0.8.0',
       description='High level access to the Hetzner robot',
       url='https://github.com/aszlig/hetzner',
       author='aszlig',
