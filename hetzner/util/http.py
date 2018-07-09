@@ -104,6 +104,7 @@ class ValidatedHTTPSConnection(HTTPSConnection):
             "/etc/ssl/certs/ca-certificates.crt",
             "/etc/ssl/certs/ca-bundle.crt",
             "/etc/pki/tls/certs/ca-bundle.crt",
+            "/usr/local/etc/openssl/cert.pem",
         ]
         for path in probe_paths:
             if os.path.exists(path):
