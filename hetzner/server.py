@@ -96,7 +96,7 @@ class RescueSystem(object):
         Activate the rescue system if necessary.
         """
         if not self.active:
-            opts = {'os': os, 'arch': bits, 'password': passwd, 'auth_key': sshkeys}
+            opts = {'os': os, 'arch': bits, 'password': passwd, 'authorized_key': sshkeys}
             return self._rescue_action('post', opts)
 
     def deactivate(self):
