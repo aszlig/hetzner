@@ -10,6 +10,7 @@ except ImportError:
 
 try:
     from urllib import urlencode
+    from urllib import quote
 except ImportError:
     from urllib.parse import urlencode
 
@@ -301,7 +302,21 @@ class RobotConnection(object):
 
     def request(self, method, path, data=None, allow_empty=False):
         if data is not None:
+
+            # the authorized_key needs to be set in a very specific way
+            # make sure it ends up in this format!
+
+            sshkeys = None
+            if "authorized_key" in data :
+                sshkeys = data.pop('authorized_key', None)
+                sshkeys = "&".join("authorized_key[]=%s" % quote(key)
+                                   for key in sshkeys)
+
             data = urlencode(data)
+            if sshkeys is not None:
+                data += "&"
+                data += sshkeys
+
 
         auth = 'Basic {0}'.format(b64encode(
             "{0}:{1}".format(self.user, self.passwd).encode('ascii')
