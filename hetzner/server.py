@@ -91,12 +91,12 @@ class RescueSystem(object):
         self._active = data['active']
         self._password = data['password']
 
-    def activate(self, bits=64, os='linux'):
+    def activate(self, bits=64, os='linux', passwd='', sshkeys=[]):
         """
         Activate the rescue system if necessary.
         """
         if not self.active:
-            opts = {'os': os, 'arch': bits}
+            opts = {'os': os, 'arch': bits, 'password': passwd, 'auth_key': sshkeys}
             return self._rescue_action('post', opts)
 
     def deactivate(self):
