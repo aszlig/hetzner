@@ -61,10 +61,10 @@ class RescueSystem(object):
         self._password = None
         self._authorized_keys = None
 
-    def _update_status(self, from_data=None):
-        if not from_data:
-            from_data = self.conn.get('/boot/{0}/rescue'.format(self.server.ip))
-        data = reply['rescue']
+    def _update_status(self, data=None):
+        if data is None:
+            path = '/boot/{0}/rescue'.format(self.server.ip)
+            data = self.conn.get(path)
         self._active = data['active']
         self._password = data['password']
         self._authorized_keys = data['authorized_key']
@@ -82,7 +82,7 @@ class RescueSystem(object):
             return self._password
         self._update_status()
         return self._password
-    
+
     @property
     def authorized_keys(self):
         if self._authorized_keys is not None:
