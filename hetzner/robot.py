@@ -301,7 +301,7 @@ class RobotConnection(object):
 
     def request(self, method, path, data=None, allow_empty=False):
         if data is not None:
-            data = urlencode(data)
+            data = urlencode(data, True)
 
         auth = 'Basic {0}'.format(b64encode(
             "{0}:{1}".format(self.user, self.passwd).encode('ascii')

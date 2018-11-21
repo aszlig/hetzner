@@ -59,26 +59,36 @@ class RescueSystem(object):
 
         self._active = None
         self._password = None
+        self._authorized_keys = None
 
-    def _fetch_status(self):
-        reply = self.conn.get('/boot/{0}/rescue'.format(self.server.ip))
+    def _update_status(self, from_data=None):
+        if not from_data:
+            from_data = self.conn.get('/boot/{0}/rescue'.format(self.server.ip))
         data = reply['rescue']
         self._active = data['active']
         self._password = data['password']
+        self._authorized_keys = data['authorized_key']
 
     @property
     def active(self):
         if self._active is not None:
             return self._active
-        self._fetch_status()
+        self._update_status()
         return self._active
 
     @property
     def password(self):
         if self._password is not None:
             return self._password
-        self._fetch_status()
+        self._update_status()
         return self._password
+    
+    @property
+    def authorized_keys(self):
+        if self._authorized_keys is not None:
+            return self._authorized_keys
+        self._update_status()
+        return self._authorized_keys
 
     def _rescue_action(self, method, opts=None):
         reply = self.conn.request(
@@ -87,16 +97,20 @@ class RescueSystem(object):
             opts
         )
 
-        data = reply['rescue']
-        self._active = data['active']
-        self._password = data['password']
+        self._update_status(reply)
 
-    def activate(self, bits=64, os='linux'):
+    def activate(self, bits=64, os='linux', authorized_keys=None):
         """
         Activate the rescue system if necessary.
+
+        Note that authorized_keys, if passed, must be a list of fingerprints,
+        e.g. ['a3:14:62:38:d1:45:35:6c:de:ad:ec:12:be:93:24:ef'] of the keys
+        that should have been added to robot already.
         """
         if not self.active:
             opts = {'os': os, 'arch': bits}
+            if authorized_keys is not None:
+                opts['authorized_key[]'] = authorized_keys
             return self._rescue_action('post', opts)
 
     def deactivate(self):
