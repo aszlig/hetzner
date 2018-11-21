@@ -3,6 +3,7 @@ import sys
 
 from distutils.core import setup, Command
 from unittest import TextTestRunner, TestLoader
+from doctest import DocTestSuite
 
 PYTHON_MODULES = [
     'hetzner',
@@ -27,6 +28,12 @@ class RunTests(Command):
 
     def run(self):
         tests = TestLoader().loadTestsFromName('hetzner.tests')
+        for module in PYTHON_MODULES:
+            try:
+                doctests = DocTestSuite(module)
+            except ValueError:
+                continue
+            tests.addTests(doctests)
         result = TextTestRunner(verbosity=1).run(tests)
         sys.exit(not result.wasSuccessful())
 
