@@ -103,14 +103,14 @@ class RescueSystem(object):
         """
         Activate the rescue system if necessary.
 
-        Note that authorized_keys, if passed, must be a list of fingerprints,
+        Note that 'authorized_keys', if passed, must be a list of fingerprints,
         e.g. ['a3:14:62:38:d1:45:35:6c:de:ad:ec:12:be:93:24:ef'] of the keys
         that should have been added to robot already.
         """
         if not self.active:
             opts = {'os': os, 'arch': bits}
             if authorized_keys is not None:
-                opts['authorized_key[]'] = authorized_keys
+                opts['authorized_key'] = list(authorized_keys)
             return self._rescue_action('post', opts)
 
     def deactivate(self):

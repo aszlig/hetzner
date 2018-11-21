@@ -1,5 +1,6 @@
 import json
 import logging
+import functools
 
 from base64 import b64encode
 
@@ -299,9 +300,45 @@ class RobotConnection(object):
             self.conn.connect()
             return self._request(method, path, data, headers, retry - 1)
 
+    def _encode_phpargs(self, node, path=[]):
+        """
+        Encode the given 'node' in a way PHP recognizes.
+
+        See https://php.net/manual/function.http-build-query.php for a
+        description of the format.
+
+        >>> robot = RobotConnection(None, None)
+        >>> enc = lambda arg: sorted(robot._encode_phpargs(arg).items())
+        >>> enc({'foo': [1, 2, 3]})
+        [('foo[0]', 1), ('foo[1]', 2), ('foo[2]', 3)]
+        >>> enc(['a', 'b', 'c'])
+        [('0', 'a'), ('1', 'b'), ('2', 'c')]
+        >>> enc({'a': {'b': [1, 2, 3], 'c': 'd'}})
+        [('a[b][0]', 1), ('a[b][1]', 2), ('a[b][2]', 3), ('a[c]', 'd')]
+        >>> enc({})
+        []
+        >>> enc({'a': {'b': {'c': {}}}})
+        []
+        >>> enc({'a': [1, 2, 3], 'b': {'c': 4}})
+        [('a[0]', 1), ('a[1]', 2), ('a[2]', 3), ('b[c]', 4)]
+        """
+        if isinstance(node, list):
+            enum = enumerate(node)
+        elif isinstance(node, dict):
+            enum = node.items()
+        elif len(path) == 0:
+            return node
+        else:
+            # TODO: Implement escaping of keys.
+            flatkey = map(lambda x: '[' + str(x) + ']', path[1:])
+            return {str(path[0]) + ''.join(flatkey): node}
+
+        encoded = [self._encode_phpargs(v, path + [k]) for k, v in enum]
+        return functools.reduce(lambda a, b: a.update(b) or a, encoded, {})
+
     def request(self, method, path, data=None, allow_empty=False):
         if data is not None:
-            data = urlencode(data, True)
+            data = urlencode(self._encode_phpargs(data))
 
         auth = 'Basic {0}'.format(b64encode(
             "{0}:{1}".format(self.user, self.passwd).encode('ascii')
