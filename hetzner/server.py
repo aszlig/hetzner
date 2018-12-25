@@ -65,9 +65,10 @@ class RescueSystem(object):
         if data is None:
             path = '/boot/{0}/rescue'.format(self.server.ip)
             data = self.conn.get(path)
-        self._active = data['active']
-        self._password = data['password']
-        self._authorized_keys = data['authorized_key']
+        rescue = data['rescue']
+        self._active = rescue['active']
+        self._password = rescue['password']
+        self._authorized_keys = rescue['authorized_key']
 
     @property
     def active(self):
