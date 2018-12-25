@@ -172,6 +172,10 @@ class ShowServer(SubCommand):
         for key, val in info:
             self.print_line(key, val)
 
+        running = server.reset.is_running
+        if running is not None:
+            self.print_line("Running", running)
+
         for ip in server.ips:
             if ip.rdns.ptr is None:
                 addr = ip.ip

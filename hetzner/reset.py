@@ -9,6 +9,41 @@ class Reset(object):
         self.server = server
         self.conn = server.conn
 
+        self._reset_types = None
+        self._operating_status = None
+
+    def _update_status(self):
+        data = self.conn.get('/reset/{0}'.format(self.server.ip))
+        self._operating_status = data['reset']['operating_status']
+        self._reset_types = data['reset']['type']
+
+    @property
+    def is_running(self):
+        """
+        Whether the server is running or powered off. If querying the status
+        is unsupported for the server, None is returned.
+        """
+        return {'running': True, 'shut off': False}.get(self.operating_status)
+
+    @property
+    def operating_status(self):
+        """
+        The current operating status of the server.
+        """
+        # Don't cache the result, because the status might have changed
+        # in the meantime.
+        self._update_status()
+        return self._operating_status
+
+    @property
+    def reset_types(self):
+        """
+        The reset types available for this server.
+        """
+        if self._reset_types is None:
+            self._update_status()
+        return self._reset_types
+
     def check_ssh(self, port=22, timeout=5):
         """
         Check if the current server has an open SSH port. Return True if port
