@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 
@@ -22,6 +23,10 @@ from hetzner.util.http import ValidatedHTTPSConnection
 ROBOT_HOST = "robot-ws.your-server.de"
 ROBOT_WEBHOST = "robot.your-server.de"
 ROBOT_LOGINHOST = "accounts.hetzner.com"
+
+RE_CSRF_TOKEN = re.compile(
+    r'<input[^>]*?name="_csrf_token"[^>]*?value="([^">]+)"'
+)
 
 __all__ = ['Robot', 'RobotConnection', 'RobotWebInterface', 'ServerManager']
 
@@ -156,7 +161,14 @@ class RobotWebInterface(object):
             raise WebRobotError("Invalid status code {0} while visiting login"
                                 " page".format(response.status))
 
-        data = urlencode({'_username': self.user, '_password': self.passwd})
+        # Find the CSRF token
+        haystack = response.read()
+        token = RE_CSRF_TOKEN.search(str(haystack))
+        if token is None:
+            raise WebRobotError("Unable to find CSRF token for login form")
+
+        data = urlencode({'_username': self.user, '_password': self.passwd,
+                          '_csrf_token': token.group(1)})
         self.logger.debug("Logging in to auth site with user %s.", self.user)
 
         # Again, we need to reconnect here.
