@@ -48,12 +48,13 @@ class FailoverManager(object):
                 "Invalid IP address '%s'. Failover IP addresses are %s"
                 % (ip, failovers.keys()))
         failover = failovers.get(ip)
-        if new_destination == failover.active_server_ip:
+        dest_list = new_destination.split(' ')
+        if failover.active_server_ip in dest_list:
             raise RobotError(
                 "%s is already the active destination of failover IP %s"
                 % (new_destination, ip))
-        available_dests = [s.ip for s in list(self.servers)]
-        if new_destination not in available_dests:
+        available_dests = set([s.ip for s in list(self.servers)])
+        if len(available_dests.intersection(set(dest_list))) == 0:
             raise RobotError(
                 "Invalid destination '%s'. "
                 "The destination is not in your server list: %s"
