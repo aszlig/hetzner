@@ -339,6 +339,27 @@ class Config(SubCommand):
                 self.config.write(fp)
 
 
+class ListStorageboxes(SubCommand):
+    command = 'list-storageboxes'
+    description = "List all storageboxes"
+
+    def execute(self, robot, parser, args):
+        for storagebox in robot.storageboxes:
+            info = {
+                'login': storagebox.login,
+                'product': storagebox.product
+            }
+
+            if storagebox.name != "":
+                info['name'] = storagebox.name
+
+            infolist = [u"{0}: {1}".format(key, val)
+                        for key, val in info.items()]
+
+            self.putline(u"{0} ({1})".format(storagebox.login, u", ".join(infolist)))
+
+
+
 def main():
     subcommands = [
         Config,
@@ -350,6 +371,7 @@ def main():
         ReverseDNS,
         Admin,
         Failover,
+        ListStorageboxes
     ]
 
     common_parser = argparse.ArgumentParser(
