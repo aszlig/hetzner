@@ -30,19 +30,19 @@ class SubAccount(object):
         self.comment = data['comment']
 
     def update(self, homedirectory, samba, ssh, external_reachability, webdav, readonly, comment):
-        result = self.conn.put('/storagebox/{0}/subaccount/{1}'.format(self.box_id_, self.username),
-                                {'homedirectory': homedirectory,
-                                 'samba': samba,
-                                 'ssh': ssh,
-                                 'external_reachability': external_reachability,
-                                 'webdav': webdav,
-                                 'readonly': readonly,
-                                 'comment': comment})
-
-        return result
+        path = f'/storagebox/{self.box_id_}/subaccount/{self.username}'
+        data = {'homedirectory': homedirectory,
+             'samba': samba,
+             'ssh': ssh,
+             'external_reachability': external_reachability,
+             'webdav': webdav,
+             'readonly': readonly,
+             'comment': comment}
+        return self.conn.put(path, data)
 
     def reset_password(self):
-        result = self.conn.post('/storagebox/{0}/subaccount/{1}/password'.format(self.box_id_, self.username), None)
+        data = f'/storagebox/{self.box_id_}/subaccount/{self.username}/password'
+        result = self.conn.post(data, None)
         return result['password']
 
     def delete(self):
