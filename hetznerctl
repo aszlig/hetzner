@@ -359,7 +359,6 @@ class ListStorageboxes(SubCommand):
             self.putline(u"{0} ({1})".format(storagebox.login, u", ".join(infolist)))
 
 
-
 def main():
     subcommands = [
         Config,
@@ -371,7 +370,7 @@ def main():
         ReverseDNS,
         Admin,
         Failover,
-        ListStorageboxes
+        ListStorageboxes,
     ]
 
     common_parser = argparse.ArgumentParser(
