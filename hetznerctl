@@ -162,9 +162,7 @@ class ShowServer(SubCommand):
             ("Product", server.product),
             ("Data center", server.datacenter),
             ("Traffic", server.traffic),
-            ("Flatrate", server.flatrate),
             ("Status", server.status),
-            ("Throttled", server.throttled),
             ("Cancelled", server.cancelled),
             ("Paid until", server.paid_until),
         ]
