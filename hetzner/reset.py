@@ -138,6 +138,7 @@ class Reset(object):
             'manual': 'man',
             'hard': 'hw',
             'soft': 'sw',
+            'power': 'power',
         }
 
         modekey = modes.get(mode, modes['soft'])
