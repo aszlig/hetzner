@@ -42,6 +42,10 @@
       });
     in lib.mapAttrs' mkInterpreterPackage supported) nixpkgs.legacyPackages;
 
-    hydraJobs = lib.genAttrs hydraSystems (lib.flip lib.getAttr self.checks);
+    hydraJobs = lib.genAttrs hydraSystems (system: let
+      # Hydra doesn't allow job names containing periods.
+      mangleName = lib.replaceStrings [ "." ] [ "_" ];
+      mangleAttrName = name: lib.nameValuePair (mangleName name);
+    in lib.mapAttrs' mangleAttrName self.checks.${system});
   };
 }
