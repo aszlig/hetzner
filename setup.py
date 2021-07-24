@@ -46,5 +46,6 @@ setup(name='hetzner',
       author_email='aszlig@nix.build',
       scripts=['hetznerctl'],
       py_modules=PYTHON_MODULES,
+      python_requires='>=3.7',
       cmdclass={'test': RunTests},
       license='BSD')
