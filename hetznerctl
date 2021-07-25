@@ -4,6 +4,7 @@ import locale
 import warnings
 import argparse
 import subprocess
+import os
 
 from os.path import expanduser
 
@@ -17,6 +18,10 @@ except ImportError:
     from configparser import RawConfigParser
 
 
+class ConfigError(Exception):
+    pass
+
+
 class CommandConfigParser(RawConfigParser):
     """A config parser extension to read *_cmd options transparently.
 
@@ -26,18 +31,36 @@ class CommandConfigParser(RawConfigParser):
     value.
     """
 
+    @staticmethod
+    def _check(section, name):
+        def has(name): super().has_option(section, name)
+        if has(name) and has(name + "_cmd"):
+            raise ConfigError(
+                "Option {}.{} has a corresponing _cmd option."
+                " At most one of the two is allowed".format(section, name))
+
+
     def has_or_cmd(self, section, name):
+        self._check(section, name)
         def has(name): super().has_option(section, name)
         if name.endswith("_cmd"):
             return has(name)
         return has(name) or has(name + "_cmd")
 
     def get_get_or_cmd(self, section, name):
+        self._check(section, name)
         def has(name): super().has_option(section, name)
         def get(name): super().get(section, name)
         if has(name + "_cmd") and not has(name):
             return subprocess.check_output(get(name + "_cmd"), shell=True)
         return get(name)
+
+    def read(self, filename):
+        # check that the config file is not accessable for group and others
+        if os.stat(filename).st_mode not in (0o100600, 0o100400):
+            raise ConfigError("The config file must only have read and write"
+                              " permissions for the owner.")
+        super().read(filename)
 
 
 def make_option(*args, **kwargs):
