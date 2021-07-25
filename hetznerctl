@@ -17,8 +17,8 @@ except ImportError:
     from configparser import RawConfigParser
 
 
-class SecureConfigParser(RawConfigParser):
-    """A config parser extension to read *_cmd options trasperantly.
+class CommandConfigParser(RawConfigParser):
+    """A config parser extension to read *_cmd options transparently.
 
     If an option is queried with get() or has_option() but it does not exist
     this class tries to find a corresponing *_cmd option instead and execute
@@ -31,20 +31,20 @@ class SecureConfigParser(RawConfigParser):
         result = subprocess.run(cmd, capture_output=True)
         if result.returncode == 0:
             return result.stdout
-        raise Exception("Command {} exited with error {}: {}".format(cmd,
-            result.returncode, result.stderr))
+        raise Exception("Command {} exited with error {}: {}".format(
+            cmd, result.returncode, result.stderr))
 
     def has_option(self, section, name):
-        has = lambda name: super().has_option(section, name)
+        def has(name): super().has_option(section, name)
         if name.endswith("_cmd"):
             return has(name)
-        return has(name) or has(name+"_cmd")
+        return has(name) or has(name + "_cmd")
 
     def get(self, section, name):
-        has = lambda name: super().has_option(section, name)
-        get = lambda name: super().get(section, name)
-        if has(name+"_cmd") and not has(name):
-            return self._run_cmd(get(name+"_cmd"))
+        def has(name): super().has_option(section, name)
+        def get(name): super().get(section, name)
+        if has(name + "_cmd") and not has(name):
+            return self._run_cmd(get(name + "_cmd"))
         return get(name)
 
 
@@ -60,7 +60,7 @@ class SubCommand(object):
     requires_robot = True
 
     def __init__(self, configfile):
-        self.config = SecureConfigParser()
+        self.config = CommandConfigParser()
         self.config.read(configfile)
 
     def putline(self, line):
