@@ -428,6 +428,11 @@ def main():
                 " continue with this operation. You can do this using"
                 " `hetznerctl config login.username <your-robot-username>' and"
                 " `hetznerctl config login.password <your-robot-password>'."
+                " If you do not want to store your credentials in the config"
+                " file in plain text you can give a shell command that should"
+                " print the option value on stdout.  Use `hetznerctl config"
+                " login.username_cmd <username-command>' and `hetznerctl"
+                " config login.username_cmd <password-command>` to save them."
             ).format(args.configfile))
         robot = Robot(
             subcommand.config.get_or_cmd('login', 'username'),
