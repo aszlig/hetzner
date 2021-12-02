@@ -111,7 +111,7 @@ class RescueSystem(object):
         if not self.active:
             opts = {'os': os, 'arch': bits}
             if authorized_keys is not None:
-                opts['authorized_key'] = list(authorized_keys)
+                opts['authorized_key'] = authorized_keys.split()
             return self._rescue_action('post', opts)
 
     def deactivate(self):
@@ -126,7 +126,8 @@ class RescueSystem(object):
         Activate the rescue system and reboot into it.
         Look at Server.observed_reboot() for options.
         """
-        self.activate()
+        authkey = kwargs.pop('authkey', None)
+        self.activate(authorized_keys=authkey)
         self.server.observed_reboot(*args, **kwargs)
 
     def observed_deactivate(self, *args, **kwargs):
