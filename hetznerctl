@@ -79,9 +79,10 @@ class Rescue(SubCommand):
         make_option('-n', '--noshell', dest='noshell', action='store_true',
                     default=False, help=("Don't drop into a shell, only print"
                                          " rescue password")),
-        make_option('-a', '--authorized-key', dest='authkey', metavar='AUTHKEY',
-                    default=None, help=("md5 fingerprint of the key that should"
-                                        " have been added to robot already")),
+        make_option('-a', '--authorized-key', dest='authkey',
+                    metavar='AUTHKEY', nargs=1,
+                    help=("md5 fingerprint of the key that should"
+                          " have been added to robot already")),
         make_option('ip', metavar='IP', nargs='+',
                     help="IP address of the server to put into rescue system"),
     ]

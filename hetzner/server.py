@@ -111,7 +111,7 @@ class RescueSystem(object):
         if not self.active:
             opts = {'os': os, 'arch': bits}
             if authorized_keys is not None:
-                opts['authorized_key'] = authorized_keys.split()
+                opts['authorized_key'] = list(authorized_keys)
             return self._rescue_action('post', opts)
 
     def deactivate(self):
