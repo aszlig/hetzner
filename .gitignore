@@ -1,3 +1,9 @@
 *.pyc
 /build/
 /result
+
+# Coverage
+.coverage
+
+# JetBrains
+.idea
