@@ -57,6 +57,7 @@ class CommandConfigParser(RawConfigParser):
 
     def read(self, filename):
         # check that the config file is not accessable for group and others
+        import stat # TODO
         if os.stat(filename).st_mode not in (0o100600, 0o100400):
             raise ConfigError("The config file must only have read and write"
                               " permissions for the owner.")
