@@ -13,7 +13,7 @@ class Reset(object):
         self._operating_status = None
 
     def _update_status(self):
-        data = self.conn.get('/reset/{0}'.format(self.server.ip))
+        data = self.conn.get('/reset/{0}'.format(self.server.number))
         self._operating_status = data['reset']['operating_status']
         self._reset_types = data['reset']['type']
 
@@ -80,7 +80,7 @@ class Reset(object):
             tries = ['soft', 'hard']
 
         for mode in tries:
-            self.server.logger.info("Tring to reboot using the %r method.",
+            self.server.logger.info("Trying to reboot using the %r method.",
                                     mode)
             self.reboot(mode)
 
@@ -125,5 +125,5 @@ class Reset(object):
         }
 
         modekey = modes.get(mode, modes['soft'])
-        return self.conn.post('/reset/{0}'.format(self.server.ip),
+        return self.conn.post('/reset/{0}'.format(self.server.number),
                               {'type': modekey})
