@@ -79,6 +79,10 @@ class Rescue(SubCommand):
         make_option('-n', '--noshell', dest='noshell', action='store_true',
                     default=False, help=("Don't drop into a shell, only print"
                                          " rescue password")),
+        make_option('-a', '--authorized-key', dest='authorized_keys',
+                    metavar='AUTHKEY', action='append',
+                    help=("An MD5 fingerprint of an SSH key which has"
+                          " previously been added to the Robot")),
         make_option('ip', metavar='IP', nargs='+',
                     help="IP address of the server to put into rescue system"),
     ]
@@ -92,6 +96,7 @@ class Rescue(SubCommand):
             kwargs = {
                 'patience': args.patience,
                 'manual': args.manual,
+                'authorized_keys': args.authorized_keys,
             }
 
             if args.noshell:
