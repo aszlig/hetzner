@@ -13,7 +13,7 @@ class Reset(object):
         self._operating_status = None
 
     def _update_status(self):
-        data = self.conn.get('/reset/{0}'.format(self.server.ip))
+        data = self.conn.get('/reset/{0}'.format(self.server.number))
         self._operating_status = data['reset']['operating_status']
         self._reset_types = data['reset']['type']
 
