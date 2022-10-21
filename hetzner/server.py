@@ -63,7 +63,7 @@ class RescueSystem(object):
 
     def _update_status(self, data=None):
         if data is None:
-            path = '/boot/{0}/rescue'.format(self.server.ip)
+            path = '/boot/{0}/rescue'.format(self.server.number)
             data = self.conn.get(path)
         rescue = data['rescue']
         self._active = rescue['active']
@@ -94,7 +94,7 @@ class RescueSystem(object):
     def _rescue_action(self, method, opts=None):
         reply = self.conn.request(
             method,
-            '/boot/{0}/rescue'.format(self.server.ip),
+            '/boot/{0}/rescue'.format(self.server.number),
             opts
         )
 
