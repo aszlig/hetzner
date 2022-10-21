@@ -459,7 +459,6 @@ class Server(object):
         self.status = data['status']
         self.cancelled = data['cancelled']
         self.paid_until = datetime.strptime(data['paid_until'], '%Y-%m-%d')
-        self.is_vserver = self.product.startswith('VQ')
 
     def observed_reboot(self, *args, **kwargs):
         msg = ("Server.observed_reboot() is deprecated. Please use"
