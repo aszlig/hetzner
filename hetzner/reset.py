@@ -77,7 +77,10 @@ class Reset(object):
         is_down = False
 
         if tries is None:
-            tries = ['soft', 'hard']
+            if 'sw' not in self.reset_types:
+                tries = ['hard']
+            else:
+                tries = ['soft', 'hard']
 
         for mode in tries:
             self.server.logger.info("Trying to reboot using the %r method.",
