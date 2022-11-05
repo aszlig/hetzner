@@ -1,3 +1,4 @@
 *.pyc
 /build/
 /result
+.idea
