@@ -17,6 +17,7 @@ except ImportError:
 
 from hetzner import WebRobotError, RobotError
 from hetzner.server import Server
+from hetzner.storagebox import StorageBox
 from hetzner.rdns import ReverseDNSManager
 from hetzner.failover import FailoverManager
 from hetzner.util.http import ValidatedHTTPSConnection
@@ -427,10 +428,24 @@ class ServerManager(object):
     def __iter__(self):
         return iter([Server(self.conn, s) for s in self.conn.get('/server')])
 
+class StorageBoxManager(object):
+    def __init__(self, conn):
+        self.conn = conn
+
+    def get(self, id_):
+        """
+        Get storage boxes by providing its main id
+        """
+        return StorageBox(self.conn, self.conn.get('/storagebox/{0}'.format(id_)))
+
+    def __iter__(self):
+        return iter([StorageBox(self.conn, s) for s in self.conn.get('/storagebox')])
+
 
 class Robot(object):
     def __init__(self, user, passwd):
         self.conn = RobotConnection(user, passwd)
         self.servers = ServerManager(self.conn)
+        self.storageboxes = StorageBoxManager(self.conn)
         self.rdns = ReverseDNSManager(self.conn)
         self.failover = FailoverManager(self.conn, self.servers)
