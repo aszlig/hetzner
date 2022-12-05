@@ -6,9 +6,9 @@ __all__ = ['StorageBox', 'SubAccount', 'SubAccountManager']
 
 
 class SubAccount(object):
-    def __init__(self, conn, box_id_, result):
+    def __init__(self, conn, box_id, result):
         self.conn = conn
-        self.box_id_ = box_id_
+        self.box_id = box_id
         self.update_info(result)
 
     def update_info(self, result):
@@ -30,7 +30,7 @@ class SubAccount(object):
         self.comment = data['comment']
 
     def update(self, homedirectory, samba, ssh, external_reachability, webdav, readonly, comment):
-        path = f'/storagebox/{self.box_id_}/subaccount/{self.username}'
+        path = f'/storagebox/{self.box_id}/subaccount/{self.username}'
         data = {'homedirectory': homedirectory,
              'samba': samba,
              'ssh': ssh,
@@ -41,24 +41,24 @@ class SubAccount(object):
         return self.conn.put(path, data)
 
     def reset_password(self):
-        data = f'/storagebox/{self.box_id_}/subaccount/{self.username}/password'
+        data = f'/storagebox/{self.box_id}/subaccount/{self.username}/password'
         result = self.conn.post(data, None)
         return result['password']
 
     def delete(self):
-        self.conn.delete('/storagebox/{0}/subaccount/{1}'.format(self.box_id_, self.username))
+        self.conn.delete('/storagebox/{0}/subaccount/{1}'.format(self.box_id, self.username))
 
     def __repr__(self):
         return "<SubAccount {0}>".format(self.username)
 
 
 class SubAccountManager(object):
-    def __init__(self, conn, box_id_):
+    def __init__(self, conn, box_id):
         self.conn = conn
-        self.box_id_ = box_id_
+        self.box_id = box_id
 
     def create(self, homedirectory, samba, ssh, external_reachability, webdav, readonly, comment):
-        result = self.conn.post('/storagebox/{0}/subaccount'.format(self.box_id_),
+        result = self.conn.post('/storagebox/{0}/subaccount'.format(self.box_id),
                                 {'homedirectory': homedirectory,
                                  'samba': samba,
                                  'ssh': ssh,
@@ -70,10 +70,10 @@ class SubAccountManager(object):
         return result
 
     def delete(self, username):
-        self.conn.delete('/storagebox/{0}/subaccount/{1}'.format(self.box_id_, username))
+        self.conn.delete('/storagebox/{0}/subaccount/{1}'.format(self.box_id, username))
 
     def __iter__(self):
-        return iter([SubAccount(self.conn, self.box_id_, s) for s in self.conn.get('/storagebox/{0}/subaccount'.format(self.box_id_))])
+        return iter([SubAccount(self.conn, self.box_id, s) for s in self.conn.get('/storagebox/{0}/subaccount'.format(self.box_id))])
 
 
 class StorageBox(object):
