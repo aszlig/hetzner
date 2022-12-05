@@ -5,6 +5,8 @@ import functools
 
 from base64 import b64encode
 
+from hetzner.key import Key
+
 try:
     from httplib import BadStatusLine, ResponseNotReady
 except ImportError:
@@ -442,6 +444,19 @@ class StorageBoxManager(object):
         return iter([StorageBox(self.conn, s) for s in self.conn.get('/storagebox')])
 
 
+class KeysManager(object):
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __iter__(self):
+        return iter([Key(self._conn, data=k) for k in self._conn.get('/key')])
+
+    def delete(self, fingerprint: str):
+        return self._conn.request('DELETE', f"/key/{fingerprint}")
+
+    def add(self, name: str, data: str):
+        return Key(self._conn, data=self._conn.request('POST', "/key", {"name": name, "data": data})["key"])
+
 class Robot(object):
     def __init__(self, user, passwd):
         self.conn = RobotConnection(user, passwd)
@@ -449,3 +464,4 @@ class Robot(object):
         self.storageboxes = StorageBoxManager(self.conn)
         self.rdns = ReverseDNSManager(self.conn)
         self.failover = FailoverManager(self.conn, self.servers)
+        self.keys = KeysManager(self.conn)
