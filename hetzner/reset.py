@@ -5,6 +5,13 @@ from hetzner import ConnectError, ManualReboot
 
 
 class Reset(object):
+    _modes = {
+        'manual': 'man',
+        'hard': 'hw',
+        'soft': 'sw',
+        'power': 'power',
+    }
+
     def __init__(self, server):
         self.server = server
         self.conn = server.conn
@@ -42,7 +49,8 @@ class Reset(object):
         """
         if self._reset_types is None:
             self._update_status()
-        return self._reset_types
+
+        return tuple(key for key, value in self._modes.items() if value in self._reset_types)
 
     def check_ssh(self, port=22, timeout=5):
         """
@@ -117,13 +125,7 @@ class Reset(object):
         a poor devil from the data center to go to your server and press the
         power button.
         """
-        modes = {
-            'manual': 'man',
-            'hard': 'hw',
-            'soft': 'sw',
-            'power': 'power',
-        }
 
-        modekey = modes.get(mode, modes['soft'])
+        modekey = self._modes.get(mode, self._modes['soft'])
         return self.conn.post('/reset/{0}'.format(self.server.number),
                               {'type': modekey})
