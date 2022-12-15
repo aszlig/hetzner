@@ -356,10 +356,10 @@ class ListStorageboxes(SubCommand):
             if storagebox.name != "":
                 info['name'] = storagebox.name
 
-            infolist = [u"{0}: {1}".format(key, val)
+            infolist = ["{0}: {1}".format(key, val)
                         for key, val in info.items()]
 
-            self.putline(u"{0} ({1})".format(storagebox.login, u", ".join(infolist)))
+            self.putline("{0} ({1})".format(storagebox.login, ", ".join(infolist)))
 
 
 def main():
