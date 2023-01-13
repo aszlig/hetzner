@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 import sys
-
-from distutils.core import setup, Command
-from unittest import TextTestRunner, TestLoader
+from distutils.core import Command, setup
 from doctest import DocTestSuite
+from unittest import TestLoader, TextTestRunner
 
 PYTHON_MODULES = [
-    'hetzner',
-    'hetzner.failover',
-    'hetzner.rdns',
-    'hetzner.reset',
-    'hetzner.robot',
-    'hetzner.server',
-    'hetzner.util',
-    'hetzner.util.addr',
-    'hetzner.util.http',
-    'hetzner.util.scraping',
-    'hetzner.tests',
-    'hetzner.tests.test_util_addr',
+    "hetzner",
+    "hetzner.failover",
+    "hetzner.rdns",
+    "hetzner.reset",
+    "hetzner.robot",
+    "hetzner.server",
+    "hetzner.util",
+    "hetzner.util.addr",
+    "hetzner.util.http",
+    "hetzner.util.scraping",
+    "hetzner.tests",
+    "hetzner.tests.test_util_addr",
 ]
 
 
@@ -27,7 +26,7 @@ class RunTests(Command):
     initialize_options = finalize_options = lambda self: None
 
     def run(self):
-        tests = TestLoader().loadTestsFromName('hetzner.tests')
+        tests = TestLoader().loadTestsFromName("hetzner.tests")
         for module in PYTHON_MODULES:
             try:
                 doctests = DocTestSuite(module)
@@ -38,14 +37,16 @@ class RunTests(Command):
         sys.exit(not result.wasSuccessful())
 
 
-setup(name='hetzner',
-      version='0.8.3',
-      description='High level access to the Hetzner robot',
-      url='https://github.com/aszlig/hetzner',
-      author='aszlig',
-      author_email='aszlig@nix.build',
-      scripts=['hetznerctl'],
-      py_modules=PYTHON_MODULES,
-      python_requires='>=3.7',
-      cmdclass={'test': RunTests},
-      license='BSD')
+setup(
+    name="hetzner",
+    version="0.8.3",
+    description="High level access to the Hetzner robot",
+    url="https://github.com/aszlig/hetzner",
+    author="aszlig",
+    author_email="aszlig@nix.build",
+    scripts=["hetznerctl"],
+    py_modules=PYTHON_MODULES,
+    python_requires=">=3.7",
+    cmdclass={"test": RunTests},
+    license="BSD",
+)

@@ -1,14 +1,13 @@
+import logging
 import os
-import re
 import random
+import re
 import string
 import subprocess
 import warnings
-import logging
-
-from tempfile import mkdtemp
 from datetime import datetime
 from functools import reduce
+from tempfile import mkdtemp
 
 try:
     from urllib import urlencode
@@ -20,15 +19,23 @@ from hetzner.rdns import ReverseDNS, ReverseDNSManager
 from hetzner.reset import Reset
 from hetzner.util import addr, scraping
 
-__all__ = ['AdminAccount', 'IpAddress', 'RescueSystem', 'Server', 'Subnet',
-           'IpManager', 'SubnetManager']
+__all__ = [
+    "AdminAccount",
+    "IpAddress",
+    "RescueSystem",
+    "Server",
+    "Subnet",
+    "IpManager",
+    "SubnetManager",
+]
 
 
-class SSHAskPassHelper(object):
+class SSHAskPassHelper:
     """
     This creates a temporary SSH askpass helper script, which just passes the
     provided password.
     """
+
     def __init__(self, passwd):
         self.passwd = passwd
         self.tempdir = None
@@ -40,7 +47,7 @@ class SSHAskPassHelper(object):
         fd = os.open(script, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o700)
         self.script = script
         esc_passwd = self.passwd.replace("'", r"'\''")
-        askpass = "#!/bin/sh\necho -n '{0}'".format(esc_passwd).encode('ascii')
+        askpass = f"#!/bin/sh\necho -n '{esc_passwd}'".encode("ascii")
         os.write(fd, askpass)
         os.close(fd)
         return script
@@ -52,7 +59,7 @@ class SSHAskPassHelper(object):
             os.rmdir(self.tempdir)
 
 
-class RescueSystem(object):
+class RescueSystem:
     def __init__(self, server):
         self.server = server
         self.conn = server.conn
@@ -63,12 +70,12 @@ class RescueSystem(object):
 
     def _update_status(self, data=None):
         if data is None:
-            path = '/boot/{0}/rescue'.format(self.server.number)
+            path = f"/boot/{self.server.number}/rescue"
             data = self.conn.get(path)
-        rescue = data['rescue']
-        self._active = rescue['active']
-        self._password = rescue['password']
-        self._authorized_keys = rescue['authorized_key']
+        rescue = data["rescue"]
+        self._active = rescue["active"]
+        self._password = rescue["password"]
+        self._authorized_keys = rescue["authorized_key"]
 
     @property
     def active(self):
@@ -92,15 +99,11 @@ class RescueSystem(object):
         return self._authorized_keys
 
     def _rescue_action(self, method, opts=None):
-        reply = self.conn.request(
-            method,
-            '/boot/{0}/rescue'.format(self.server.number),
-            opts
-        )
+        reply = self.conn.request(method, f"/boot/{self.server.number}/rescue", opts)
 
         self._update_status(reply)
 
-    def activate(self, bits=64, os='linux', authorized_keys=None):
+    def activate(self, bits=64, os="linux", authorized_keys=None):
         """
         Activate the rescue system if necessary.
 
@@ -109,24 +112,24 @@ class RescueSystem(object):
         that should have been added to robot already.
         """
         if not self.active:
-            opts = {'os': os, 'arch': bits}
+            opts = {"os": os, "arch": bits}
             if authorized_keys is not None:
-                opts['authorized_key'] = list(authorized_keys)
-            return self._rescue_action('post', opts)
+                opts["authorized_key"] = list(authorized_keys)
+            return self._rescue_action("post", opts)
 
     def deactivate(self):
         """
         Deactivate the rescue system if necessary.
         """
         if self.active:
-            return self._rescue_action('delete')
+            return self._rescue_action("delete")
 
     def observed_activate(self, *args, **kwargs):
         """
         Activate the rescue system and reboot into it.
         Look at Server.observed_reboot() for options.
         """
-        self.activate(authorized_keys=kwargs.pop('authorized_keys', None))
+        self.activate(authorized_keys=kwargs.pop("authorized_keys", None))
         self.server.observed_reboot(*args, **kwargs)
 
     def observed_deactivate(self, *args, **kwargs):
@@ -144,33 +147,34 @@ class RescueSystem(object):
 
         Look at Server.observed_reboot() for further options.
         """
-        msg = ("The RescueSystem.shell() method will be removed from the API"
-               " in version 1.0.0, please do not use it! See"
-               " https://github.com/aszlig/hetzner/issues/13"
-               " for details.")
+        msg = (
+            "The RescueSystem.shell() method will be removed from the API"
+            " in version 1.0.0, please do not use it! See"
+            " https://github.com/aszlig/hetzner/issues/13"
+            " for details."
+        )
         warnings.warn(msg, FutureWarning)
         self.observed_activate(*args, **kwargs)
 
         with SSHAskPassHelper(self.password) as askpass:
             ssh_options = [
-                'CheckHostIP=no',
-                'GlobalKnownHostsFile=/dev/null',
-                'UserKnownHostsFile=/dev/null',
-                'StrictHostKeyChecking=no',
-                'LogLevel=quiet',
+                "CheckHostIP=no",
+                "GlobalKnownHostsFile=/dev/null",
+                "UserKnownHostsFile=/dev/null",
+                "StrictHostKeyChecking=no",
+                "LogLevel=quiet",
             ]
-            ssh_args = reduce(lambda acc, opt: acc + ['-o', opt],
-                              ssh_options, [])
-            cmd = ['ssh'] + ssh_args + ["root@{0}".format(self.server.ip)]
+            ssh_args = reduce(lambda acc, opt: acc + ["-o", opt], ssh_options, [])
+            cmd = ["ssh"] + ssh_args + [f"root@{self.server.ip}"]
             env = dict(os.environ)
-            env['DISPLAY'] = ":666"
-            env['SSH_ASKPASS'] = askpass
+            env["DISPLAY"] = ":666"
+            env["SSH_ASKPASS"] = askpass
             subprocess.check_call(cmd, env=env, preexec_fn=os.setsid)
 
         self.observed_deactivate(*args, **kwargs)
 
 
-class AdminAccount(object):
+class AdminAccount:
     def __init__(self, server):
         # XXX: This is preliminary, because we don't have such functionality in
         #      the official API yet.
@@ -186,13 +190,12 @@ class AdminAccount(object):
         Get information about currently active admin login.
         """
         self._scraper.login()
-        login_re = re.compile(r'"label_req">Login.*?"element">([^<]+)',
-                              re.DOTALL)
+        login_re = re.compile(r'"label_req">Login.*?"element">([^<]+)', re.DOTALL)
 
-        path = '/server/admin/id/{0}'.format(self._serverid)
+        path = f"/server/admin/id/{self._serverid}"
         response = self._scraper.request(path)
         assert response.status == 200
-        match = login_re.search(response.read().decode('utf-8'))
+        match = login_re.search(response.read().decode("utf-8"))
         if match is None:
             self.exists = False
         else:
@@ -203,7 +206,7 @@ class AdminAccount(object):
         random.seed(os.urandom(512))
         chars = string.ascii_letters + string.digits + "/()-=+_,;.^~#*@"
         length = random.randint(20, 40)
-        return ''.join(random.choice(chars) for i in range(length))
+        return "".join(random.choice(chars) for i in range(length))
 
     def create(self, passwd=None):
         """
@@ -213,38 +216,36 @@ class AdminAccount(object):
         if passwd is None:
             passwd = self._genpasswd()
 
-        form_path = '/server/admin/id/{0}'.format(self._serverid)
-        form_response = self._scraper.request(form_path, method='POST')
+        form_path = f"/server/admin/id/{self._serverid}"
+        form_response = self._scraper.request(form_path, method="POST")
 
-        parser = scraping.CSRFParser('password[_csrf_token]')
-        parser.feed(form_response.read().decode('utf-8'))
+        parser = scraping.CSRFParser("password[_csrf_token]")
+        parser.feed(form_response.read().decode("utf-8"))
         assert parser.csrf_token is not None
 
         data = {
-            'password[new_password]': passwd,
-            'password[new_password_repeat]': passwd,
-            'password[_csrf_token]': parser.csrf_token,
+            "password[new_password]": passwd,
+            "password[new_password_repeat]": passwd,
+            "password[_csrf_token]": parser.csrf_token,
         }
 
         if not self.exists:
             failmsg = "Unable to create admin account"
-            path = '/server/adminCreate/id/{0}'.format(self._serverid)
+            path = f"/server/adminCreate/id/{self._serverid}"
         else:
             failmsg = "Unable to update admin account password"
-            path = '/server/adminUpdate'
-            data['id'] = self._serverid
+            path = "/server/adminUpdate"
+            data["id"] = self._serverid
 
         response = self._scraper.request(path, data)
-        data = response.read().decode('utf-8')
+        data = response.read().decode("utf-8")
         if "msgbox_success" not in data:
-            ul_re = re.compile(r'<ul\s+class="error_list">(.*?)</ul>',
-                               re.DOTALL)
-            li_re = re.compile(r'<li>\s*([^<]*?)\s*</li>')
+            ul_re = re.compile(r'<ul\s+class="error_list">(.*?)</ul>', re.DOTALL)
+            li_re = re.compile(r"<li>\s*([^<]*?)\s*</li>")
             ul_match = ul_re.search(data)
             if ul_match is not None:
-                errors = [error.group(1)
-                          for error in li_re.finditer(ul_match.group(0))]
-                msg = failmsg + ': ' + ', '.join(errors)
+                errors = [error.group(1) for error in li_re.finditer(ul_match.group(0))]
+                msg = failmsg + ": " + ", ".join(errors)
                 raise WebRobotError(msg)
             raise WebRobotError(failmsg)
         self.update_info()
@@ -257,19 +258,18 @@ class AdminAccount(object):
         """
         if not self.exists:
             return
-        path = '/server/adminDelete/id/{0}'.format(self._serverid)
-        assert "msgbox_success" in \
-            self._scraper.request(path).read().decode('utf-8')
+        path = f"/server/adminDelete/id/{self._serverid}"
+        assert "msgbox_success" in self._scraper.request(path).read().decode("utf-8")
         self.update_info()
 
     def __repr__(self):
         if self.exists:
-            return "<AdminAccount login: {0}>".format(self.login)
+            return f"<AdminAccount login: {self.login}>"
         else:
             return "<AdminAccount missing>"
 
 
-class IpAddress(object):
+class IpAddress:
     def __init__(self, conn, result, subnet_ip=None):
         self.conn = conn
         self.subnet_ip = subnet_ip
@@ -293,31 +293,31 @@ class IpAddress(object):
         """
         if self.subnet_ip is not None:
             if result is None:
-                result = self.conn.get('/subnet/{0}'.format(self._subnet_addr))
-            data = result['subnet']
-            self._subnet_addr = data['ip']
-            data['ip'] = self.subnet_ip
+                result = self.conn.get(f"/subnet/{self._subnet_addr}")
+            data = result["subnet"]
+            self._subnet_addr = data["ip"]
+            data["ip"] = self.subnet_ip
             # Does not exist in subnets
-            data['separate_mac'] = None
+            data["separate_mac"] = None
         else:
             if result is None:
-                result = self.conn.get('/ip/{0}'.format(self.ip))
-            data = result['ip']
+                result = self.conn.get(f"/ip/{self.ip}")
+            data = result["ip"]
 
-        self.ip = data['ip']
-        self.server_ip = data['server_ip']
-        self.locked = data['locked']
-        self.separate_mac = data['separate_mac']
-        self.traffic_warnings = data['traffic_warnings']
-        self.traffic_hourly = data['traffic_hourly']
-        self.traffic_daily = data['traffic_daily']
-        self.traffic_monthly = data['traffic_monthly']
+        self.ip = data["ip"]
+        self.server_ip = data["server_ip"]
+        self.locked = data["locked"]
+        self.separate_mac = data["separate_mac"]
+        self.traffic_warnings = data["traffic_warnings"]
+        self.traffic_hourly = data["traffic_hourly"]
+        self.traffic_daily = data["traffic_daily"]
+        self.traffic_monthly = data["traffic_monthly"]
 
     def __repr__(self):
-        return "<IpAddress {0}>".format(self.ip)
+        return f"<IpAddress {self.ip}>"
 
 
-class IpManager(object):
+class IpManager:
     def __init__(self, conn, main_ip):
         self.conn = conn
         self.main_ip = main_ip
@@ -326,15 +326,15 @@ class IpManager(object):
         """
         Get a specific IP address of a server.
         """
-        return IpAddress(self.conn, self.conn.get('/ip/{0}'.format(ip)))
+        return IpAddress(self.conn, self.conn.get(f"/ip/{ip}"))
 
     def __iter__(self):
-        data = urlencode({'server_ip': self.main_ip})
-        result = self.conn.get('/ip?{0}'.format(data))
+        data = urlencode({"server_ip": self.main_ip})
+        result = self.conn.get(f"/ip?{data}")
         return iter([IpAddress(self.conn, ip) for ip in result])
 
 
-class Subnet(object):
+class Subnet:
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
@@ -345,20 +345,20 @@ class Subnet(object):
         request is sent to the robot to gather the information.
         """
         if result is None:
-            result = self.conn.get('/subnet/{0}'.format(self.net_ip))
+            result = self.conn.get(f"/subnet/{self.net_ip}")
 
-        data = result['subnet']
+        data = result["subnet"]
 
-        self.net_ip = data['ip']
-        self.mask = data['mask']
-        self.gateway = data['gateway']
-        self.server_ip = data['server_ip']
-        self.failover = data['failover']
-        self.locked = data['locked']
-        self.traffic_warnings = data['traffic_warnings']
-        self.traffic_hourly = data['traffic_hourly']
-        self.traffic_daily = data['traffic_daily']
-        self.traffic_monthly = data['traffic_monthly']
+        self.net_ip = data["ip"]
+        self.mask = data["mask"]
+        self.gateway = data["gateway"]
+        self.server_ip = data["server_ip"]
+        self.failover = data["failover"]
+        self.locked = data["locked"]
+        self.traffic_warnings = data["traffic_warnings"]
+        self.traffic_hourly = data["traffic_hourly"]
+        self.traffic_daily = data["traffic_daily"]
+        self.traffic_monthly = data["traffic_monthly"]
 
         self.is_ipv6, self.numeric_net_ip = addr.parse_ipaddr(self.net_ip)
         self.numeric_gateway = addr.parse_ipaddr(self.gateway, self.is_ipv6)
@@ -386,17 +386,18 @@ class Subnet(object):
         None if the IP address doesn't exist in the current subnet.
         """
         if addr in self:
-            result = self.conn.get('/subnet/{0}'.format(self.net_ip))
+            result = self.conn.get(f"/subnet/{self.net_ip}")
             return IpAddress(self.conn, result, addr)
         else:
             return None
 
     def __repr__(self):
-        return "<Subnet {0}/{1} (Gateway: {2})>".format(self.net_ip, self.mask,
-                                                        self.gateway)
+        return "<Subnet {}/{} (Gateway: {})>".format(
+            self.net_ip, self.mask, self.gateway
+        )
 
 
-class SubnetManager(object):
+class SubnetManager:
     def __init__(self, conn, main_ip):
         self.conn = conn
         self.main_ip = main_ip
@@ -405,12 +406,12 @@ class SubnetManager(object):
         """
         Get a specific subnet of a server.
         """
-        return Subnet(self.conn, self.conn.get('/subnet/{0}'.format(net_ip)))
+        return Subnet(self.conn, self.conn.get(f"/subnet/{net_ip}"))
 
     def __iter__(self):
-        data = urlencode({'server_ip': self.main_ip})
+        data = urlencode({"server_ip": self.main_ip})
         try:
-            result = self.conn.get('/subnet?{0}'.format(data))
+            result = self.conn.get(f"/subnet?{data}")
         except RobotError as err:
             # If there are no subnets a 404 is returned rather than just an
             # empty list.
@@ -419,7 +420,7 @@ class SubnetManager(object):
         return iter([Subnet(self.conn, net) for net in result])
 
 
-class Server(object):
+class Server:
     def __init__(self, conn, result):
         self.conn = conn
         self.update_info(result)
@@ -429,7 +430,7 @@ class Server(object):
         self.subnets = SubnetManager(self.conn, self.ip)
         self.rdns = ReverseDNSManager(self.conn, self.ip)
         self._admin_account = None
-        self.logger = logging.getLogger("Server #{0}".format(self.number))
+        self.logger = logging.getLogger(f"Server #{self.number}")
 
     @property
     def admin(self):
@@ -446,36 +447,39 @@ class Server(object):
         sending a new GET request or by parsing the response given by result.
         """
         if result is None:
-            result = self.conn.get('/server/{0}'.format(self.ip))
+            result = self.conn.get(f"/server/{self.ip}")
 
-        data = result['server']
+        data = result["server"]
 
-        self.ip = data['server_ip']
-        self.number = data['server_number']
-        self.name = data['server_name']
-        self.product = data['product']
-        self.datacenter = data['dc']
-        self.traffic = data['traffic']
-        self.status = data['status']
-        self.cancelled = data['cancelled']
-        self.paid_until = datetime.strptime(data['paid_until'], '%Y-%m-%d')
+        self.ip = data["server_ip"]
+        self.number = data["server_number"]
+        self.name = data["server_name"]
+        self.product = data["product"]
+        self.datacenter = data["dc"]
+        self.traffic = data["traffic"]
+        self.status = data["status"]
+        self.cancelled = data["cancelled"]
+        self.paid_until = datetime.strptime(data["paid_until"], "%Y-%m-%d")
 
     def observed_reboot(self, *args, **kwargs):
-        msg = ("Server.observed_reboot() is deprecated. Please use"
-               " Server.reset.observed_reboot() instead.")
+        msg = (
+            "Server.observed_reboot() is deprecated. Please use"
+            " Server.reset.observed_reboot() instead."
+        )
         warnings.warn(msg, DeprecationWarning)
         return self.reset.observed_reboot(*args, **kwargs)
 
     def reboot(self, *args, **kwargs):
-        msg = ("Server.reboot() is deprecated. Please use"
-               " Server.reset.reboot() instead.")
+        msg = (
+            "Server.reboot() is deprecated. Please use"
+            " Server.reset.reboot() instead."
+        )
         warnings.warn(msg, DeprecationWarning)
         return self.reset.reboot(*args, **kwargs)
 
     def set_name(self, name):
-        result = self.conn.post('/server/{0}'.format(self.ip),
-                                {'server_name': name})
+        result = self.conn.post(f"/server/{self.ip}", {"server_name": name})
         self.update_info(result)
 
     def __repr__(self):
-        return "<{0} (#{1} {2})>".format(self.ip, self.number, self.product)
+        return f"<{self.ip} (#{self.number} {self.product})>"

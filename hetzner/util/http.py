@@ -1,7 +1,6 @@
 import os
-import ssl
 import socket
-
+import ssl
 from tempfile import NamedTemporaryFile
 
 try:
@@ -11,7 +10,7 @@ except ImportError:
 
 
 class ValidatedHTTPSConnection(HTTPSConnection):
-    CA_ROOT_CERT_FALLBACK = '''
+    CA_ROOT_CERT_FALLBACK = """
         DigiCert Global Root G2
         -----BEGIN CERTIFICATE-----
         MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
@@ -35,10 +34,10 @@ class ValidatedHTTPSConnection(HTTPSConnection):
         pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
         MrY=
         -----END CERTIFICATE-----
-    '''
+    """
 
     def get_ca_cert_bundle(self):
-        via_env = os.getenv('SSL_CERT_FILE')
+        via_env = os.getenv("SSL_CERT_FILE")
         if via_env is not None and os.path.exists(via_env):
             return via_env
         probe_paths = [
@@ -52,19 +51,25 @@ class ValidatedHTTPSConnection(HTTPSConnection):
         return None
 
     def connect(self):
-        sock = socket.create_connection((self.host, self.port),
-                                        self.timeout,
-                                        self.source_address)
+        sock = socket.create_connection(
+            (self.host, self.port), self.timeout, self.source_address
+        )
         bundle = cafile = self.get_ca_cert_bundle()
         if bundle is None:
             ca_certs = NamedTemporaryFile()
-            ca_certs.write('\n'.join(
-                map(str.strip, self.CA_ROOT_CERT_FALLBACK.splitlines())
-            ).encode('ascii'))
+            ca_certs.write(
+                "\n".join(
+                    map(str.strip, self.CA_ROOT_CERT_FALLBACK.splitlines())
+                ).encode("ascii")
+            )
             ca_certs.flush()
             cafile = ca_certs.name
-        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=cafile)
+        self.sock = ssl.wrap_socket(
+            sock,
+            self.key_file,
+            self.cert_file,
+            cert_reqs=ssl.CERT_REQUIRED,
+            ca_certs=cafile,
+        )
         if bundle is None:
             ca_certs.close()

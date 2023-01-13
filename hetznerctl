@@ -1,14 +1,12 @@
 #!/usr/bin/env python
-import sys
-import locale
-import warnings
 import argparse
-
+import locale
+import logging
+import sys
+import warnings
 from os.path import expanduser
 
 from hetzner.robot import Robot
-
-import logging
 
 try:
     from ConfigParser import RawConfigParser
@@ -20,7 +18,7 @@ def make_option(*args, **kwargs):
     return (args, kwargs)
 
 
-class SubCommand(object):
+class SubCommand:
     command = None
     description = None
     long_description = None
@@ -32,27 +30,32 @@ class SubCommand(object):
         self.config.read(configfile)
 
     def putline(self, line):
-        data = line + u"\n"
+        data = line + "\n"
         try:
             sys.stdout.write(data)
         except UnicodeEncodeError:
             preferred = locale.getpreferredencoding()
-            sys.stdout.write(data.encode(preferred, 'replace'))
+            sys.stdout.write(data.encode(preferred, "replace"))
 
     def execute(self, robot, parser, args):
         pass
 
 
 class Reboot(SubCommand):
-    command = 'reboot'
+    command = "reboot"
     description = "Reboot a server"
     option_list = [
-        make_option('-m', '--method', dest='method',
-                    choices=['soft', 'hard', 'manual'], default='soft',
-                    help="The method to use for the reboot"),
-        make_option('ip', metavar='IP', nargs='+',
-                    help="IP address of the server to reboot"),
-
+        make_option(
+            "-m",
+            "--method",
+            dest="method",
+            choices=["soft", "hard", "manual"],
+            default="soft",
+            help="The method to use for the reboot",
+        ),
+        make_option(
+            "ip", metavar="IP", nargs="+", help="IP address of the server to reboot"
+        ),
     ]
 
     def execute(self, robot, parser, args):
@@ -63,28 +66,57 @@ class Reboot(SubCommand):
 
 
 class Rescue(SubCommand):
-    command = 'rescue'
+    command = "rescue"
     description = "Activate rescue system"
-    long_description = ("Reboot into rescue system, spawn a shell and"
-                        " after the shell is closed, reboot back into"
-                        " the normal system.")
+    long_description = (
+        "Reboot into rescue system, spawn a shell and"
+        " after the shell is closed, reboot back into"
+        " the normal system."
+    )
     option_list = [
-        make_option('-p', '--patience', dest='patience', type=int,
-                    default=300, help=("The time to wait between subsequent"
-                                       " reboot tries")),
-        make_option('-m', '--manual', dest='manual', action='store_true',
-                    default=False, help=("If all reboot tries fail,"
-                                         " automatically send a support"
-                                         " request")),
-        make_option('-n', '--noshell', dest='noshell', action='store_true',
-                    default=False, help=("Don't drop into a shell, only print"
-                                         " rescue password")),
-        make_option('-a', '--authorized-key', dest='authorized_keys',
-                    metavar='AUTHKEY', action='append',
-                    help=("An MD5 fingerprint of an SSH key which has"
-                          " previously been added to the Robot")),
-        make_option('ip', metavar='IP', nargs='+',
-                    help="IP address of the server to put into rescue system"),
+        make_option(
+            "-p",
+            "--patience",
+            dest="patience",
+            type=int,
+            default=300,
+            help=("The time to wait between subsequent" " reboot tries"),
+        ),
+        make_option(
+            "-m",
+            "--manual",
+            dest="manual",
+            action="store_true",
+            default=False,
+            help=(
+                "If all reboot tries fail," " automatically send a support" " request"
+            ),
+        ),
+        make_option(
+            "-n",
+            "--noshell",
+            dest="noshell",
+            action="store_true",
+            default=False,
+            help=("Don't drop into a shell, only print" " rescue password"),
+        ),
+        make_option(
+            "-a",
+            "--authorized-key",
+            dest="authorized_keys",
+            metavar="AUTHKEY",
+            action="append",
+            help=(
+                "An MD5 fingerprint of an SSH key which has"
+                " previously been added to the Robot"
+            ),
+        ),
+        make_option(
+            "ip",
+            metavar="IP",
+            nargs="+",
+            help="IP address of the server to put into rescue system",
+        ),
     ]
 
     def execute(self, robot, parser, args):
@@ -94,15 +126,14 @@ class Rescue(SubCommand):
                 continue
 
             kwargs = {
-                'patience': args.patience,
-                'manual': args.manual,
-                'authorized_keys': args.authorized_keys,
+                "patience": args.patience,
+                "manual": args.manual,
+                "authorized_keys": args.authorized_keys,
             }
 
             if args.noshell:
                 server.rescue.observed_activate(**kwargs)
-                msg = u"Password for {0}: {1}".format(server.ip,
-                                                      server.rescue.password)
+                msg = f"Password for {server.ip}: {server.rescue.password}"
                 self.putline(msg)
             else:
                 with warnings.catch_warnings():
@@ -115,9 +146,10 @@ class SetName(SubCommand):
     description = "Change the name of a server"
 
     option_list = [
-        make_option('ip', metavar='IP', help="IP address of the server"),
-        make_option('name', metavar='NAME', nargs='?', default='',
-                    help="New name of the server"),
+        make_option("ip", metavar="IP", help="IP address of the server"),
+        make_option(
+            "name", metavar="NAME", nargs="?", default="", help="New name of the server"
+        ),
     ]
 
     def execute(self, robot, parser, args):
@@ -125,31 +157,26 @@ class SetName(SubCommand):
 
 
 class ListServers(SubCommand):
-    command = 'list'
+    command = "list"
     description = "List all servers"
 
     def execute(self, robot, parser, args):
         for server in robot.servers:
-            info = {
-                'id': server.number,
-                'model': server.product
-            }
+            info = {"id": server.number, "model": server.product}
 
             if server.name != "":
-                info['name'] = server.name
+                info["name"] = server.name
 
-            infolist = [u"{0}: {1}".format(key, val)
-                        for key, val in info.items()]
+            infolist = [f"{key}: {val}" for key, val in info.items()]
 
-            self.putline(u"{0} ({1})".format(server.ip, u", ".join(infolist)))
+            self.putline("{} ({})".format(server.ip, ", ".join(infolist)))
 
 
 class ShowServer(SubCommand):
-    command = 'show'
+    command = "show"
     description = "Show details about a server"
     option_list = [
-        make_option('ip', nargs='+', metavar='IP',
-                    help="IP address of the server"),
+        make_option("ip", nargs="+", metavar="IP", help="IP address of the server"),
     ]
 
     def execute(self, robot, parser, args):
@@ -157,7 +184,7 @@ class ShowServer(SubCommand):
             self.print_serverinfo(robot.servers.get(ip))
 
     def print_line(self, key, val):
-        self.putline(u"{0:<15}{1}".format(key + u":", val))
+        self.putline("{:<15}{}".format(key + ":", val))
 
     def print_serverinfo(self, server):
         info = [
@@ -183,85 +210,117 @@ class ShowServer(SubCommand):
             if ip.rdns.ptr is None:
                 addr = ip.ip
             else:
-                addr = u"{0} (rPTR: {1})".format(ip.ip, ip.rdns.ptr)
-            self.print_line(u"IP address", addr)
+                addr = f"{ip.ip} (rPTR: {ip.rdns.ptr})"
+            self.print_line("IP address", addr)
 
         for net in server.subnets:
-            addrtype = u"IPv6" if net.is_ipv6 else u"IPv4"
-            addr = u"{0}/{1} ({2})".format(net.net_ip, net.mask, addrtype)
-            self.print_line(u"Subnet", addr)
-            self.print_line(u"Gateway", net.gateway)
+            addrtype = "IPv6" if net.is_ipv6 else "IPv4"
+            addr = f"{net.net_ip}/{net.mask} ({addrtype})"
+            self.print_line("Subnet", addr)
+            self.print_line("Gateway", net.gateway)
 
         for rdns in server.rdns:
-            rptr = u"{0} -> {1}".format(rdns.ip, rdns.ptr)
-            self.print_line(u"Reverse PTR", rptr)
+            rptr = f"{rdns.ip} -> {rdns.ptr}"
+            self.print_line("Reverse PTR", rptr)
 
 
 class ReverseDNS(SubCommand):
-    command = 'rdns'
+    command = "rdns"
     description = "List and set reverse DNS records"
     option_list = [
-        make_option('-s', '--set', dest='setptr', action='store_true',
-                    default=False, help="Set a new reverse PTR"),
-        make_option('-d', '--delete', dest='delptr', action='store_true',
-                    default=False, help="Delete reverse PTR"),
-        make_option('ip', metavar='IP', nargs='?', default=None,
-                    help="IP address of the server"),
-        make_option('value', metavar='RPTR', nargs='?', default=None,
-                    help="New reverse record to set"),
+        make_option(
+            "-s",
+            "--set",
+            dest="setptr",
+            action="store_true",
+            default=False,
+            help="Set a new reverse PTR",
+        ),
+        make_option(
+            "-d",
+            "--delete",
+            dest="delptr",
+            action="store_true",
+            default=False,
+            help="Delete reverse PTR",
+        ),
+        make_option(
+            "ip", metavar="IP", nargs="?", default=None, help="IP address of the server"
+        ),
+        make_option(
+            "value",
+            metavar="RPTR",
+            nargs="?",
+            default=None,
+            help="New reverse record to set",
+        ),
     ]
 
     def execute(self, robot, parser, args):
         if args.ip is None:
             for rdns in robot.rdns:
-                self.putline("{0} -> {1}".format(rdns.ip, rdns.ptr))
+                self.putline(f"{rdns.ip} -> {rdns.ptr}")
         elif args.delptr:
             robot.rdns.get(args.ip).remove()
         elif args.setptr:
             if args.ip is None or args.value is None:
-                parser.error("Need exactly two arguments: IP address and new"
-                             " reverse FQDN.")
+                parser.error(
+                    "Need exactly two arguments: IP address and new" " reverse FQDN."
+                )
             else:
                 rdns = robot.rdns.get(args.ip)
                 rdns.set(args.value)
         else:
             rdns = robot.rdns.get(args.ip)
             if rdns.ptr is None:
-                self.putline("No reverse record set for {0}.".format(rdns.ip))
+                self.putline(f"No reverse record set for {rdns.ip}.")
             else:
-                self.putline("{0} -> {1}".format(rdns.ip, rdns.ptr))
+                self.putline(f"{rdns.ip} -> {rdns.ptr}")
 
 
 class Failover(SubCommand):
-    command = 'failover'
-    description = 'List and set failover IP addresses'
+    command = "failover"
+    description = "List and set failover IP addresses"
 
     option_list = [
-        make_option('-s', '--set', dest='setfailover', action='store_true',
-                    default=False,
-                    help="Assign failover IP address to server"),
-        make_option('ip', nargs='?', default=None,
-                    help="Failover IP address to assign"),
-        make_option('destination', nargs='?', default=None,
-                    help="IP address of new failover destination")
+        make_option(
+            "-s",
+            "--set",
+            dest="setfailover",
+            action="store_true",
+            default=False,
+            help="Assign failover IP address to server",
+        ),
+        make_option(
+            "ip", nargs="?", default=None, help="Failover IP address to assign"
+        ),
+        make_option(
+            "destination",
+            nargs="?",
+            default=None,
+            help="IP address of new failover destination",
+        ),
     ]
 
     def execute(self, robot, parser, args):
         if args.setfailover:
             errs = []
             if not args.ip:
-                errs.append("Error: you need to set the failover IP you"
-                            " want to assign. Option 'ip'")
+                errs.append(
+                    "Error: you need to set the failover IP you"
+                    " want to assign. Option 'ip'"
+                )
             if not args.destination:
-                errs.append("Error: you need to set the new destination of"
-                            " the failover IP. Option 'dest'")
+                errs.append(
+                    "Error: you need to set the new destination of"
+                    " the failover IP. Option 'dest'"
+                )
             if len(errs) > 0:
                 for err in errs:
                     self.putline(err)
             else:
                 failover = robot.failover.set(args.ip, args.destination)
-                self.putline("Failover IP successfully assigned to new"
-                             " destination")
+                self.putline("Failover IP successfully assigned to new" " destination")
                 self.putline(str(failover))
         else:
             failovers = robot.failover.list()
@@ -272,17 +331,35 @@ class Failover(SubCommand):
 
 
 class Admin(SubCommand):
-    command = 'admin'
+    command = "admin"
     description = "Create/delete dedicated admin accounts"
     option_list = [
-        make_option('-C', '--create', dest='addadmin', action='store_true',
-                    default=False, help="Create admin account"),
-        make_option('-d', '--delete', dest='deladmin', action='store_true',
-                    default=False, help="Delete admin account"),
-        make_option('-p', '--password', dest='admpasswd', metavar='PASSWORD',
-                    help="Use this password instead of generating one"),
-        make_option('ip', metavar='IP', nargs='+', default=None,
-                    help="IP address of the server"),
+        make_option(
+            "-C",
+            "--create",
+            dest="addadmin",
+            action="store_true",
+            default=False,
+            help="Create admin account",
+        ),
+        make_option(
+            "-d",
+            "--delete",
+            dest="deladmin",
+            action="store_true",
+            default=False,
+            help="Delete admin account",
+        ),
+        make_option(
+            "-p",
+            "--password",
+            dest="admpasswd",
+            metavar="PASSWORD",
+            help="Use this password instead of generating one",
+        ),
+        make_option(
+            "ip", metavar="IP", nargs="+", default=None, help="IP address of the server"
+        ),
     ]
 
     def execute(self, robot, parser, args):
@@ -290,30 +367,37 @@ class Admin(SubCommand):
             server = robot.servers.get(ip)
             if args.addadmin:
                 login, passwd = server.admin.create(passwd=args.admpasswd)
-                msg = "{0}: {1} -> {2}".format(server.ip, login, passwd)
+                msg = f"{server.ip}: {login} -> {passwd}"
                 self.putline(msg)
             elif args.deladmin:
                 server.admin.delete()
             else:
                 if server.admin.exists:
-                    msg = "{0}: {1}".format(server.ip, server.admin.login)
+                    msg = f"{server.ip}: {server.admin.login}"
                 else:
-                    msg = "No admin account for {0}.".format(server.ip)
+                    msg = f"No admin account for {server.ip}."
                 self.putline(msg)
 
 
 class Config(SubCommand):
-    command = 'config'
+    command = "config"
     description = "Get or set options"
-    long_description = ("Set options by just using `config section.option"
-                        " value' or list options by not providing any"
-                        " arguments.")
+    long_description = (
+        "Set options by just using `config section.option"
+        " value' or list options by not providing any"
+        " arguments."
+    )
     option_list = [
-        make_option('-d', '--delete', dest='delete', action='store_true',
-                    default=False, help="Delete an option"),
-        make_option('name', nargs='?', help="Section and name of the option"),
-        make_option('value', nargs='?', default=None,
-                    help="New value of the option"),
+        make_option(
+            "-d",
+            "--delete",
+            dest="delete",
+            action="store_true",
+            default=False,
+            help="Delete an option",
+        ),
+        make_option("name", nargs="?", help="Section and name of the option"),
+        make_option("value", nargs="?", default=None, help="New value of the option"),
     ]
     requires_robot = False
 
@@ -321,16 +405,16 @@ class Config(SubCommand):
         if args.name is None:
             for section in self.config.sections():
                 for key, value in self.config.items(section):
-                    self.putline("{0}.{1}={2!r}".format(section, key, value))
+                    self.putline(f"{section}.{key}={value!r}")
         else:
-            if '.' not in args.name:
-                parser.error("Option name needs to be in the form"
-                             " <section>.<name>.")
-            section, name = args.name.split('.', 1)
+            if "." not in args.name:
+                parser.error("Option name needs to be in the form" " <section>.<name>.")
+            section, name = args.name.split(".", 1)
             if args.value is None:
                 if not args.delete:
-                    parser.error("In order to delete/unset an option, please"
-                                 " use -d.")
+                    parser.error(
+                        "In order to delete/unset an option, please" " use -d."
+                    )
                 self.config.remove_option(section, name)
                 if len(self.config.options(section)) == 0:
                     self.config.remove_section(section)
@@ -338,7 +422,7 @@ class Config(SubCommand):
                 if not self.config.has_section(section):
                     self.config.add_section(section)
                 self.config.set(section, name, args.value)
-            with open(args.configfile, 'w') as fp:
+            with open(args.configfile, "w") as fp:
                 self.config.write(fp)
 
 
@@ -356,21 +440,26 @@ def main():
     ]
 
     common_parser = argparse.ArgumentParser(
-        description="Common options",
-        add_help=False
+        description="Common options", add_help=False
     )
     global_options = common_parser.add_argument_group(title="global options")
-    global_options.add_argument('-c', '--config', dest='configfile',
-                                default='~/.hetznerrc', type=expanduser,
-                                help="The location of the configuration file")
-    global_options.add_argument('--debug', action='store_true',
-                                help="Show debug output.")
+    global_options.add_argument(
+        "-c",
+        "--config",
+        dest="configfile",
+        default="~/.hetznerrc",
+        type=expanduser,
+        help="The location of the configuration file",
+    )
+    global_options.add_argument(
+        "--debug", action="store_true", help="Show debug output."
+    )
 
     parser = argparse.ArgumentParser(
         description="Hetzner Robot commandline interface",
-        prog='hetznerctl',
+        prog="hetznerctl",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=[common_parser]
+        parents=[common_parser],
     )
 
     subparsers = parser.add_subparsers(
@@ -385,7 +474,7 @@ def main():
             help=cmd.description,
             description=cmd.long_description,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            parents=[common_parser]
+            parents=[common_parser],
         )
         for args, kwargs in cmd.option_list:
             subparser.add_argument(*args, **kwargs)
@@ -393,31 +482,36 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(format='%(name)s: %(message)s',
-                        level=logging.DEBUG if args.debug else logging.INFO)
+    logging.basicConfig(
+        format="%(name)s: %(message)s",
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
 
-    if getattr(args, 'cmdclass', None) is None:
+    if getattr(args, "cmdclass", None) is None:
         parser.print_help()
         parser.exit(1)
     subcommand = args.cmdclass(args.configfile)
 
     if subcommand.requires_robot:
-        if not subcommand.config.has_option('login', 'username') or \
-           not subcommand.config.has_option('login', 'password'):
-            parser.error((
-                "You need to set a user and password in {0} in order to"
-                " continue with this operation. You can do this using"
-                " `hetznerctl config login.username <your-robot-username>' and"
-                " `hetznerctl config login.password <your-robot-password>'."
-            ).format(args.configfile))
+        if not subcommand.config.has_option(
+            "login", "username"
+        ) or not subcommand.config.has_option("login", "password"):
+            parser.error(
+                (
+                    "You need to set a user and password in {} in order to"
+                    " continue with this operation. You can do this using"
+                    " `hetznerctl config login.username <your-robot-username>' and"
+                    " `hetznerctl config login.password <your-robot-password>'."
+                ).format(args.configfile)
+            )
         robot = Robot(
-            subcommand.config.get('login', 'username'),
-            subcommand.config.get('login', 'password'),
+            subcommand.config.get("login", "username"),
+            subcommand.config.get("login", "password"),
         )
     else:
         robot = None
     subcommand.execute(robot, parser, args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ import time
 from hetzner import ConnectError, ManualReboot
 
 
-class Reset(object):
+class Reset:
     def __init__(self, server):
         self.server = server
         self.conn = server.conn
@@ -13,9 +13,9 @@ class Reset(object):
         self._operating_status = None
 
     def _update_status(self):
-        data = self.conn.get('/reset/{0}'.format(self.server.number))
-        self._operating_status = data['reset']['operating_status']
-        self._reset_types = data['reset']['type']
+        data = self.conn.get(f"/reset/{self.server.number}")
+        self._operating_status = data["reset"]["operating_status"]
+        self._reset_types = data["reset"]["type"]
 
     @property
     def is_running(self):
@@ -23,7 +23,7 @@ class Reset(object):
         Whether the server is running or powered off. If querying the status
         is unsupported for the server, None is returned.
         """
-        return {'running': True, 'shut off': False}.get(self.operating_status)
+        return {"running": True, "shut off": False}.get(self.operating_status)
 
     @property
     def operating_status(self):
@@ -57,7 +57,7 @@ class Reset(object):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.server.ip, port))
             s.close()
-        except socket.error:
+        except OSError:
             success = False
 
         socket.setdefaulttimeout(old_timeout)
@@ -77,11 +77,10 @@ class Reset(object):
         is_down = False
 
         if tries is None:
-            tries = ['soft', 'hard']
+            tries = ["soft", "hard"]
 
         for mode in tries:
-            self.server.logger.info("Trying to reboot using the %r method.",
-                                    mode)
+            self.server.logger.info("Trying to reboot using the %r method.", mode)
             self.reboot(mode)
 
             start_time = time.time()
@@ -90,8 +89,7 @@ class Reset(object):
                 current_time = time.time()
                 if current_time > start_time + patience:
                     self.server.logger.info(
-                        "Machine didn't come up after %d seconds.",
-                        patience
+                        "Machine didn't come up after %d seconds.", patience
                     )
                     break
 
@@ -104,13 +102,15 @@ class Reset(object):
                 elif not is_down:
                     is_down = not is_up
         if manual:
-            self.reboot('manual')
-            raise ManualReboot("Issued a manual reboot because the server"
-                               " did not come back to life.")
+            self.reboot("manual")
+            raise ManualReboot(
+                "Issued a manual reboot because the server"
+                " did not come back to life."
+            )
         else:
             raise ConnectError("Server keeps playing dead after reboot :-(")
 
-    def reboot(self, mode='soft'):
+    def reboot(self, mode="soft"):
         """
         Reboot the server, modes are "soft" for reboot by triggering Ctrl-Alt-
         Del, "hard" for triggering a hardware reset and "manual" for requesting
@@ -118,12 +118,11 @@ class Reset(object):
         power button.
         """
         modes = {
-            'manual': 'man',
-            'hard': 'hw',
-            'soft': 'sw',
-            'power': 'power',
+            "manual": "man",
+            "hard": "hw",
+            "soft": "sw",
+            "power": "power",
         }
 
-        modekey = modes.get(mode, modes['soft'])
-        return self.conn.post('/reset/{0}'.format(self.server.number),
-                              {'type': modekey})
+        modekey = modes.get(mode, modes["soft"])
+        return self.conn.post(f"/reset/{self.server.number}", {"type": modekey})

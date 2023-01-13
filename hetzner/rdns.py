@@ -5,10 +5,10 @@ except ImportError:
 
 from hetzner import RobotError
 
-__all__ = ['ReverseDNS', 'ReverseDNSManager']
+__all__ = ["ReverseDNS", "ReverseDNSManager"]
 
 
-class ReverseDNS(object):
+class ReverseDNS:
     def __init__(self, conn, ip=None, result=None):
         self.conn = conn
         self.ip = ip
@@ -17,7 +17,7 @@ class ReverseDNS(object):
     def update_info(self, result=None):
         if result is None:
             try:
-                result = self.conn.get('/rdns/{0}'.format(self.ip))
+                result = self.conn.get(f"/rdns/{self.ip}")
             except RobotError as err:
                 if err.status == 404:
                     result = None
@@ -25,23 +25,23 @@ class ReverseDNS(object):
                     raise
 
         if result is not None:
-            data = result['rdns']
-            self.ip = data['ip']
-            self.ptr = data['ptr']
+            data = result["rdns"]
+            self.ip = data["ip"]
+            self.ptr = data["ptr"]
         else:
             self.ptr = None
 
     def set(self, value):
-        self.conn.post('/rdns/{0}'.format(self.ip), {'ptr': value})
+        self.conn.post(f"/rdns/{self.ip}", {"ptr": value})
 
     def remove(self):
-        self.conn.delete('/rdns/{0}'.format(self.ip))
+        self.conn.delete(f"/rdns/{self.ip}")
 
     def __repr__(self):
-        return "<ReverseDNS PTR: {0}>".format(self.ptr)
+        return f"<ReverseDNS PTR: {self.ptr}>"
 
 
-class ReverseDNSManager(object):
+class ReverseDNSManager:
     def __init__(self, conn, main_ip=None):
         self.conn = conn
         self.main_ip = main_ip
@@ -51,10 +51,10 @@ class ReverseDNSManager(object):
 
     def __iter__(self):
         if self.main_ip is None:
-            url = '/rdns'
+            url = "/rdns"
         else:
-            data = urlencode({'server_ip': self.main_ip})
-            url = '/rdns?{0}'.format(data)
+            data = urlencode({"server_ip": self.main_ip})
+            url = f"/rdns?{data}"
         try:
             result = self.conn.get(url)
         except RobotError as err:

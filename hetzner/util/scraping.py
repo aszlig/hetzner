@@ -11,9 +11,10 @@ class CSRFParser(HTMLParser):
         self.csrf_token = None
 
     def handle_starttag(self, tag, attrs):
-        if tag != 'input':
+        if tag != "input":
             return
         attrdict = dict(attrs)
-        if attrdict.get('name', '') == self.field_name:
-            self.csrf_token = attrdict.get('value', None)
+        if attrdict.get("name", "") == self.field_name:
+            self.csrf_token = attrdict.get("value", None)
+
     handle_startendtag = handle_starttag

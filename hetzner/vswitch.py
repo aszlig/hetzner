@@ -1,3 +1,44 @@
+#!/usr/bin/env python3
+# ----------------------------------------------------------------------------
+# Created By   : Wieger Bontekoe <wieger.bontekoe@productsup.com>
+# Created Date : 2023-01-13
+#
+# Copyright (c) 2023, Products Up GmbH
+#
+# All rights reserved.
+# Unauthorized copying of this file, via any medium is strictly prohibited.
+#
+# ---------------------------------------------------------------------------
+""" vSwitch implementation for Hetzner """
+# ---------------------------------------------------------------------------
+# Imports from here.
+# ---------------------------------------------------------------------------
+#
+#
+# from hetzner.robot import Robot
+#
+# conn = Robot("username", "password")
+#
+# Create new vSwitch
+# conn.vswitch.create("wieger", 4000)
+#
+# Loop through vSwitches
+# for switch in conn.vswitch:
+#
+#    # print out some var
+#    print(switch.id)
+#    print(switch.name)
+#    print(switch.vlan)
+#
+#
+# Get a single vSwitch
+# s = conn.vswitch.get(36585)
+# print(s.id)
+
+# Delete a single vSwitch
+# conn.vswitch.delete(id)
+
+
 try:
     from urllib import urlencode
 except ImportError:
@@ -11,25 +52,17 @@ __all__ = ["VirtualSwitch", "VirtualSwitchManager"]
 
 
 class VirtualSwitch:
-    def __init__(self, conn):
+    def __init__(self, conn, result=None):
         """_summary_
 
         Args:
             conn (_type_): _description_
         """
         self.conn = conn
-        self.ip = ip
+        self.id = id
         self.update_info(result)
 
     def update_info(self, result=None):
-        if result is None:
-            try:
-                result = self.conn.get(f"/vswitch/{self.ip}")
-            except RobotError as err:
-                if err.status == 404:
-                    result = None
-                else:
-                    raise
 
         if result is not None:
 
@@ -40,13 +73,19 @@ class VirtualSwitch:
         else:
             self.id = None
 
+    def get(self, id: int):
+        result = self.conn.get(f"/vswitch/{id}")
+        self.update_info(result)
+        return self
+
     def set(self, name: str):
         self.conn.post(f"/vswitch/{self.id}", {"name": name}, True)
 
     def create(self, name: str, vlan: str):
+
         self.conn.post("/vswitch", {"name": name, "vlan": vlan}, True)
 
-    def remove(self, id):
+    def remove(self, id: int):
 
         # This requires the date of removal.
         self.conn.delete(
@@ -63,13 +102,13 @@ class VirtualSwitchManager:
         self.conn = conn
         self.switch_id = switch_id
 
-    def get(self, id):
-        return VirtualSwitch(self.conn, id)
+    def get(self, id: int):
+        return VirtualSwitch(self.conn).get(id)
 
-    def create(self, name, vlan):
+    def create(self, name: str, vlan: int):
         return VirtualSwitch(self.conn).create(name, vlan)
 
-    def delete(self, id):
+    def delete(self, id: int):
         return VirtualSwitch(self.conn).remove(id)
 
     def __iter__(self):
