@@ -73,6 +73,18 @@ class VirtualSwitch:
             
             if result["subnet"]:
                 self.subnet = result["subnet"]
+            else:
+                self.subnet = None
+               
+            if result["server"]:
+                self.server = result["server"]
+            else:
+                self.server = None
+            
+            if result["cloud_network"]:
+                self.cloud_network = result["cloud_network"]
+            else:
+                self.cloud_network = None
             
         else:
             self.id = None
