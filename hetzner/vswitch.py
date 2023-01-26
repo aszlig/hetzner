@@ -71,17 +71,17 @@ class VirtualSwitch:
             self.vlan = result["vlan"]
             self.cancelled = result["cancelled"]
             
-            if result["subnet"]:
+            if hasattr(result, "subnet"):
                 self.subnet = result["subnet"]
             else:
                 self.subnet = None
                
-            if result["server"]:
+            if hasattr(result, "server"):
                 self.server = result["server"]
             else:
                 self.server = None
             
-            if result["cloud_network"]:
+            if hasattr(result, "cloud_network"):
                 self.cloud_network = result["cloud_network"]
             else:
                 self.cloud_network = None
