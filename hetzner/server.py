@@ -460,7 +460,7 @@ class Server:
         self.status = data["status"]
         self.cancelled = data["cancelled"]
         self.paid_until = datetime.strptime(data["paid_until"], "%Y-%m-%d")
-        self.linked_storagebox = data['linked_storagebox']
+        self.linked_storagebox = data["linked_storagebox"]
 
     def observed_reboot(self, *args, **kwargs):
         msg = (

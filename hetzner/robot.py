@@ -19,8 +19,8 @@ except ImportError:
 from hetzner import RobotError, WebRobotError
 from hetzner.failover import FailoverManager
 from hetzner.rdns import ReverseDNSManager
-from hetzner.storagebox import StorageBox
 from hetzner.server import Server
+from hetzner.storagebox import StorageBox
 from hetzner.util.http import ValidatedHTTPSConnection
 from hetzner.vswitch import VirtualSwitchManager
 
@@ -445,7 +445,8 @@ class ServerManager:
     def __iter__(self):
         return iter([Server(self.conn, s) for s in self.conn.get("/server")])
 
-class StorageBoxManager(object):
+
+class StorageBoxManager:
     def __init__(self, conn):
         self.conn = conn
 
@@ -453,24 +454,30 @@ class StorageBoxManager(object):
         """
         Get storage boxes by providing its main id
         """
-        return StorageBox(self.conn, self.conn.get('/storagebox/{0}'.format(id_)))
+        return StorageBox(self.conn, self.conn.get(f"/storagebox/{id_}"))
 
     def __iter__(self):
-        return iter([StorageBox(self.conn, s) for s in self.conn.get('/storagebox')])
+        return iter([StorageBox(self.conn, s) for s in self.conn.get("/storagebox")])
 
 
-class KeysManager(object):
+class KeysManager:
     def __init__(self, conn):
         self._conn = conn
 
     def __iter__(self):
-        return iter([Key(self._conn, data=k) for k in self._conn.get('/key')])
+        return iter([Key(self._conn, data=k) for k in self._conn.get("/key")])
 
     def delete(self, fingerprint: str):
-        return self._conn.request('DELETE', f"/key/{fingerprint}")
+        return self._conn.request("DELETE", f"/key/{fingerprint}")
 
     def add(self, name: str, data: str):
-        return Key(self._conn, data=self._conn.request('POST', "/key", {"name": name, "data": data})["key"])
+        return Key(
+            self._conn,
+            data=self._conn.request("POST", "/key", {"name": name, "data": data})[
+                "key"
+            ],
+        )
+
 
 class Robot:
     def __init__(self, user, passwd):

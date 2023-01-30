@@ -70,22 +70,22 @@ class VirtualSwitch:
             self.name = result["name"]
             self.vlan = result["vlan"]
             self.cancelled = result["cancelled"]
-            
+
             if "subnet" in result:
                 self.subnet = result["subnet"]
             else:
                 self.subnet = None
-               
+
             if "server" in result:
                 self.server = result["server"]
             else:
                 self.server = None
-            
+
             if "cloud_network" in result:
                 self.cloud_network = result["cloud_network"]
             else:
                 self.cloud_network = None
-            
+
         else:
             self.id = None
 
