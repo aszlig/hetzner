@@ -100,7 +100,7 @@ class RescueSystem(object):
 
         self._update_status(reply)
 
-    def activate(self, bits=64, os='linux', authorized_keys=None):
+    def activate(self, os='linux', authorized_keys=None):
         """
         Activate the rescue system if necessary.
 
@@ -109,7 +109,7 @@ class RescueSystem(object):
         that should have been added to robot already.
         """
         if not self.active:
-            opts = {'os': os, 'arch': bits}
+            opts = {'os': os}
             if authorized_keys is not None:
                 opts['authorized_key'] = list(authorized_keys)
             return self._rescue_action('post', opts)
