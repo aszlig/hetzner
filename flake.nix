@@ -7,7 +7,7 @@
     hydraSystems = [ "i686-linux" "x86_64-linux" ];
 
     mkPackage = pythonPackages: pythonPackages.buildPythonPackage {
-      pname = "hetzner";
+      pname = "hetznerctl";
 
       version = let
         matchVersion = builtins.match ".*version=[\"']([^\"']+)[\"'].*";
