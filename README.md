@@ -1,3 +1,12 @@
+⚠️ No longer maintained ⚠️
+========================
+
+This project is no longer maintained and will get archived at some point.
+
+The ownership of the `hetzner` PyPI package has been transferred to Hetzner for
+their official package and versions `>= 1.0` will thus use their official
+package.
+
 Python API for the Hetzner Robot
 ================================
 
