@@ -63,8 +63,13 @@ class ValidatedHTTPSConnection(HTTPSConnection):
             ).encode('ascii'))
             ca_certs.flush()
             cafile = ca_certs.name
-        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=cafile)
+        if hasattr(ssl, "wrap_socket"):
+            self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
+                                        cert_reqs=ssl.CERT_REQUIRED,
+                                        ca_certs=cafile)
+        else:
+            ctx = ssl.create_default_context()
+            ctx.load_verify_locations(cafile=cafile)
+            self.sock = ctx.wrap_socket(sock, server_hostname=self.host)
         if bundle is None:
             ca_certs.close()
