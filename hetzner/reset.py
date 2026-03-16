@@ -122,6 +122,7 @@ class Reset(object):
             'hard': 'hw',
             'soft': 'sw',
             'power': 'power',
+            'power_long': 'power_long',
         }
 
         modekey = modes.get(mode, modes['soft'])
