@@ -3,6 +3,8 @@ import sys
 import locale
 import warnings
 import argparse
+import subprocess
+import os
 
 from os.path import expanduser
 
@@ -14,6 +16,52 @@ try:
     from ConfigParser import RawConfigParser
 except ImportError:
     from configparser import RawConfigParser
+
+
+class ConfigError(Exception):
+    pass
+
+
+class CommandConfigParser(RawConfigParser):
+    """A config parser extension to read *_cmd options transparently.
+
+    If an option is queried with get() or has_option() but it does not exist
+    this class tries to find a corresponing *_cmd option instead and execute
+    it in a shell.  The stdout of the shell command is returned as the config
+    value.
+    """
+
+    @staticmethod
+    def _check(section, name):
+        def has(name): super().has_option(section, name)
+        if has(name) and has(name + "_cmd"):
+            raise ConfigError(
+                "Option {}.{} has a corresponing _cmd option."
+                " At most one of the two is allowed".format(section, name))
+
+
+    def has_or_cmd(self, section, name):
+        self._check(section, name)
+        def has(name): super().has_option(section, name)
+        if name.endswith("_cmd"):
+            return has(name)
+        return has(name) or has(name + "_cmd")
+
+    def get_get_or_cmd(self, section, name):
+        self._check(section, name)
+        def has(name): super().has_option(section, name)
+        def get(name): super().get(section, name)
+        if has(name + "_cmd") and not has(name):
+            return subprocess.check_output(get(name + "_cmd"), shell=True)
+        return get(name)
+
+    def read(self, filename):
+        # check that the config file is not accessable for group and others
+        import stat # TODO
+        if os.stat(filename).st_mode not in (0o100600, 0o100400):
+            raise ConfigError("The config file must only have read and write"
+                              " permissions for the owner.")
+        super().read(filename)
 
 
 def make_option(*args, **kwargs):
@@ -28,7 +76,7 @@ class SubCommand(object):
     requires_robot = True
 
     def __init__(self, configfile):
-        self.config = RawConfigParser()
+        self.config = CommandConfigParser()
         self.config.read(configfile)
 
     def putline(self, line):
@@ -402,17 +450,22 @@ def main():
     subcommand = args.cmdclass(args.configfile)
 
     if subcommand.requires_robot:
-        if not subcommand.config.has_option('login', 'username') or \
-           not subcommand.config.has_option('login', 'password'):
+        if not subcommand.config.has_or_cmd('login', 'username') or \
+           not subcommand.config.has_or_cmd('login', 'password'):
             parser.error((
                 "You need to set a user and password in {0} in order to"
                 " continue with this operation. You can do this using"
                 " `hetznerctl config login.username <your-robot-username>' and"
                 " `hetznerctl config login.password <your-robot-password>'."
+                " If you do not want to store your credentials in the config"
+                " file in plain text you can give a shell command that should"
+                " print the option value on stdout.  Use `hetznerctl config"
+                " login.username_cmd <username-command>' and `hetznerctl"
+                " config login.username_cmd <password-command>` to save them."
             ).format(args.configfile))
         robot = Robot(
-            subcommand.config.get('login', 'username'),
-            subcommand.config.get('login', 'password'),
+            subcommand.config.get_or_cmd('login', 'username'),
+            subcommand.config.get_or_cmd('login', 'password'),
         )
     else:
         robot = None
