@@ -5,6 +5,8 @@ import functools
 
 from base64 import b64encode
 
+from hetzner.key import Key
+
 try:
     from httplib import BadStatusLine, ResponseNotReady
 except ImportError:
@@ -17,6 +19,7 @@ except ImportError:
 
 from hetzner import WebRobotError, RobotError
 from hetzner.server import Server
+from hetzner.storagebox import StorageBox
 from hetzner.rdns import ReverseDNSManager
 from hetzner.failover import FailoverManager
 from hetzner.util.http import ValidatedHTTPSConnection
@@ -427,10 +430,38 @@ class ServerManager(object):
     def __iter__(self):
         return iter([Server(self.conn, s) for s in self.conn.get('/server')])
 
+class StorageBoxManager(object):
+    def __init__(self, conn):
+        self.conn = conn
+
+    def get(self, id_):
+        """
+        Get storage boxes by providing its main id
+        """
+        return StorageBox(self.conn, self.conn.get('/storagebox/{0}'.format(id_)))
+
+    def __iter__(self):
+        return iter([StorageBox(self.conn, s) for s in self.conn.get('/storagebox')])
+
+
+class KeysManager(object):
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __iter__(self):
+        return iter([Key(self._conn, data=k) for k in self._conn.get('/key')])
+
+    def delete(self, fingerprint: str):
+        return self._conn.request('DELETE', f"/key/{fingerprint}")
+
+    def add(self, name: str, data: str):
+        return Key(self._conn, data=self._conn.request('POST', "/key", {"name": name, "data": data})["key"])
 
 class Robot(object):
     def __init__(self, user, passwd):
         self.conn = RobotConnection(user, passwd)
         self.servers = ServerManager(self.conn)
+        self.storageboxes = StorageBoxManager(self.conn)
         self.rdns = ReverseDNSManager(self.conn)
         self.failover = FailoverManager(self.conn, self.servers)
+        self.keys = KeysManager(self.conn)
