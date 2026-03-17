@@ -240,6 +240,9 @@ class Failover(SubCommand):
         make_option('-s', '--set', dest='setfailover', action='store_true',
                     default=False,
                     help="Assign failover IP address to server"),
+        make_option('-m', '--monitor', dest='monitorfailover',
+                    action='store_true', default=False,
+                    help="Assign failover IP address to server"),
         make_option('ip', nargs='?', default=None,
                     help="Failover IP address to assign"),
         make_option('destination', nargs='?', default=None,
@@ -247,28 +250,26 @@ class Failover(SubCommand):
     ]
 
     def execute(self, robot, parser, args):
+        msgs = []
         if args.setfailover:
-            errs = []
             if not args.ip:
-                errs.append("Error: you need to set the failover IP you"
+                msgs.append("Error: you need to set the failover IP you"
                             " want to assign. Option 'ip'")
             if not args.destination:
-                errs.append("Error: you need to set the new destination of"
+                msgs.append("Error: you need to set the new destination of"
                             " the failover IP. Option 'dest'")
-            if len(errs) > 0:
-                for err in errs:
-                    self.putline(err)
-            else:
+            if len(msgs) == 0:
                 failover = robot.failover.set(args.ip, args.destination)
-                self.putline("Failover IP successfully assigned to new"
-                             " destination")
-                self.putline(str(failover))
+                msgs.append("Failover IP successfully assigned to new"
+                            " destination")
+                msgs.append(failover)
+        elif args.monitorfailover:
+            msgs.extend(robot.failover.monitor())
         else:
-            failovers = robot.failover.list()
-            if len(failovers) > 0:
-                self.putline("Found %s failover IPs" % len(failovers))
-            for failover in failovers.values():
-                self.putline(str(failover))
+            msgs = robot.failover.list().values()
+        if len(msgs) > 0:
+            for msg in msgs:
+                self.putline(str(msg))
 
 
 class Admin(SubCommand):

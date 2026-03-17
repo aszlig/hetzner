@@ -1,3 +1,6 @@
+import re
+import subprocess
+
 from hetzner import RobotError
 
 __all__ = ['Failover', 'FailoverManager']
@@ -45,12 +48,13 @@ class FailoverManager(object):
                 "Invalid IP address '%s'. Failover IP addresses are %s"
                 % (ip, failovers.keys()))
         failover = failovers.get(ip)
-        if new_destination == failover.active_server_ip:
+        dest_list = new_destination.split(' ')
+        if failover.active_server_ip in dest_list:
             raise RobotError(
                 "%s is already the active destination of failover IP %s"
                 % (new_destination, ip))
-        available_dests = [s.ip for s in list(self.servers)]
-        if new_destination not in available_dests:
+        available_dests = set([s.ip for s in list(self.servers)])
+        if len(available_dests.intersection(set(dest_list))) == 0:
             raise RobotError(
                 "Invalid destination '%s'. "
                 "The destination is not in your server list: %s"
@@ -58,3 +62,46 @@ class FailoverManager(object):
         result = self.conn.post('/failover/%s'
                                 % ip, {'active_server_ip': new_destination})
         return Failover(result.get('failover'))
+
+    def monitor(self):
+        """Check if container with failover IP is running on host
+           and if IP is not mapped to host change settings
+        """
+        msgs = []
+        failovers = self.list()
+        if len(failovers) > 0:
+            ips = self._get_active_ips()
+            host_ip = self._get_host_ip()
+            for failover_ip, failover in failovers.items():
+                if failover_ip in ips and failover.active_server_ip != host_ip:
+                    new_failover = self.set(failover_ip, host_ip)
+                    if new_failover:
+                        msgs.append("Failover IP successfully assigned to new"
+                                    " destination")
+                        msgs.append(str(failover))
+        return msgs
+
+    def _get_active_ips(self):
+        ips = []
+        try:
+            out = subprocess.check_output(["lxc-ls", "--active", "-fF", "IPV4"])
+        except subprocess.CalledProcessError as e:
+            raise RobotError(str(e))
+        except Exception as e:
+            raise RobotError(str(e))
+        else:
+            [ips.extend([ip.strip() for ip in line.strip().split(',')])
+             for line in out.split('\n')
+             if re.search(r'\d+\.\d+\.\d+\.\d', line)]
+            return ips
+
+    def _get_host_ip(self):
+        try:
+            host_ip = subprocess.check_output(["hostname", "--ip-address"])
+        except subprocess.CalledProcessError as e:
+            raise RobotError(str(e))
+        except Exception as e:
+            raise RobotError(str(e))
+        else:
+            return host_ip.strip()
+
